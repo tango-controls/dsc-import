@@ -1,5 +1,5 @@
 
-Tango Device Servers Catalogue import utiltiy
+Tango Device Servers Catalogue import utility
 =============================================
 
 The utility imports information from a subversion repository into the Device Servers Catalogue. The repository should be
