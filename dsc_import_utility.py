@@ -3,18 +3,39 @@ import svn.remote
 import urllib2
 from getpass import getpass
 import requests
+import requests.auth
 import os.path
+import os
 from dateutil import parser as date_parser
 from time import sleep
 
-FORCE_UPDATE = True # when True no time stamp are checked and updates are performed
+FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
+TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
+VERIFY_CERT = True  # set this to false if running aginst test server without a valid certificate
 
-REMOTE_REPO_URL = 'http://svn.code.sf.net/p/tango-ds/code'
-LOCAL_REPO_URL = 'file:///home/piotr/tmp/tango-ds-repo/'
-REPO_START_PATH = 'DeviceClasses'
+# set the following variables to point to the repositories
 
+LOCAL_REPO_PATH = '/home/piotr/tmp/tango-ds-repo/'  # local copy of the repository
+LOG_PATH = '/home/piotr/tmp'  # where to log some information about import process
+
+REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
+REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
+
+# Tango Controls or test server address
 SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
 
+# command used to synchronize local repository with the remote one
+REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
+
+# URLs for accessing repositories
+REMOTE_REPO_URL = 'http://%s/%s/' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH)
+LOCAL_REPO_URL = 'file://%s' % LOCAL_REPO_PATH
+
+# if one would like to limit searched treee (useful for one device server update and or tests)
+REPO_START_PATH = 'DeviceClasses'
+
+
+# settings for catalogue configuration on the server
 SERVER_DSC_URL = SERVER_BASE_URL+'resources/dsc/'
 
 SERVER_ADD_URL = SERVER_BASE_URL+'resources/dsc/add/'
@@ -23,11 +44,7 @@ SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
 
 SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'
 
-LOG_PATH = '/home/piotr/tmp'
-
-VERIFY_CERT = False
-
-CERTS = ( '/home/piotr/tmp/cert.pem', '/home/piotr/tmp/key.pem')
+# process of importing:
 
 print "You are going to update a devcie servers catalogue info on the server: %s" % SERVER_BASE_URL
 
@@ -44,7 +61,14 @@ client.headers = {'User-Agent': 'DSC-Importer'}
 if not VERIFY_CERT:
    requests.packages.urllib3.disable_warnings()
 
-client.get(SERVER_LOGIN_URL)  # sets the cookie
+if TEST_SERVER_AUTH:
+    print 'You are going to connect to test server which requires a basic authentication first.'
+    login = raw_input('Basic auth login: ')
+    password = getpass('Basic aoth password: ')
+    client.get(SERVER_LOGIN_URL, auth=requests.auth.HTTPBasicAuth('user', 'pass'))  # sets the cookie
+else:
+    client.get(SERVER_LOGIN_URL)
+
 csrftoken = client.cookies['csrftoken']
 print csrftoken
 
@@ -59,6 +83,16 @@ if r.status_code!=200:
     exit()
 else:
     print 'Successfully logged in to catalogue server.'
+
+
+if REPO_SYNC_COMMAND!='':
+    print 'Synchronizing local repository....'
+    os.system(REPO_SYNC_COMMAND)
+    print '...local repository synchronize'
+    print '-------------------------------'
+else:
+    print 'Local repository will not be synchronized.'
+
 
 print 'Getting a list of device server in the repository...'
 
