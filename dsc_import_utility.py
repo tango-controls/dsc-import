@@ -11,19 +11,19 @@ from dateutil import parser as date_parser
 from time import sleep
 
 FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
-TEST_SERVER_AUTH = True  # Set true if script is run against test server with additional authentication (webu test)
+TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 
 # set the following variables to point to the repositories
 
 LOCAL_REPO_PATH = '/home/piotr/tmp/tango-ds-repo/'  # local copy of the repository
-LOG_PATH = '/home/piotr/tmp'  # where to log some information about import process
+LOG_PATH = '/home/piotr/tmp'  # where to log some information about import process, not used now.
 
 REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
 REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 
 # Tango Controls or test server address
-SERVER_BASE_URL = 'http://deviceserver.tango-vm.webu.coop/'
+SERVER_BASE_URL = 'http://www.tango-controls.org/'
 
 # command used to synchronize local repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
