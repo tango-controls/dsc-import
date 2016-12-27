@@ -4,6 +4,7 @@ import urllib2
 from getpass import getpass
 import requests
 import requests.auth
+import requests.packages
 import os.path
 import os
 from dateutil import parser as date_parser
@@ -11,7 +12,7 @@ from time import sleep
 
 FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
-VERIFY_CERT = True  # set this to false if running aginst test server without a valid certificate
+VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 
 # set the following variables to point to the repositories
 
@@ -28,10 +29,11 @@ SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
 
 # URLs for accessing repositories
-REMOTE_REPO_URL = 'http://%s/%s/' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH)
+REMOTE_REPO_URL = 'http://%s/%s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH)
 LOCAL_REPO_URL = 'file://%s' % LOCAL_REPO_PATH
 
 # if one would like to limit searched treee (useful for one device server update and or tests)
+# do not provide start nor end slashes
 REPO_START_PATH = 'DeviceClasses'
 
 
@@ -85,10 +87,11 @@ else:
     print 'Successfully logged in to catalogue server.'
 
 
-if REPO_SYNC_COMMAND!='':
-    print 'Synchronizing local repository....'
+if REPO_SYNC_COMMAND != '':
+    print 'Synchronizing local repository...'
+    print 'Using a commnad: %s' % REPO_SYNC_COMMAND
     os.system(REPO_SYNC_COMMAND)
-    print '...local repository synchronize'
+    print '...local repository synchronized.'
     print '-------------------------------'
 else:
     print 'Local repository will not be synchronized.'
@@ -104,6 +107,10 @@ ds_problems = []
 ds_skipped = []
 
 print 'Found %d device servers.' % len(ds_list)
+
+xmi_updated = 0
+xmi_added = 0
+xmi_not_changed = 0
 
 for ds in ds_list:
     print
@@ -154,8 +161,11 @@ for ds in ds_list:
                                                          '.html', '.HTML', '.htm', '.HTM']:
                 print 'Will skip file of unknown extension.'
             else:
-                if len(ds_on_server) == 0 or FORCE_UPDATE or \
-                        date_parser.parse(ds_on_server[0]['last_update']) < date_parser.parse(readme_file['element']['date']):
+
+                if ds_adding or FORCE_UPDATE or \
+                        date_parser.parse(server_ds['last_update']) < readme_file['element']['date']:
+                    print "README date on SVN: %s" % readme_file['element']['date']
+                    print "README date in the catalogue: %s" % date_parser.parse(server_ds['last_update'])
                     # get file from the server
                     readme_url_response = urllib2.urlopen(REMOTE_REPO_URL+'/'+readme_file['path'])
                     readme_file_size = int(readme_url_response.info().get('Content-Length',0))
@@ -205,6 +215,7 @@ for ds in ds_list:
                                 },
                                 files=files,  headers={'Referer':referrer})
                     first_xmi = False
+                    xmi_added += 1
                     print 'Adding result: %d' % r.status_code
 
                     sleep(1)
@@ -215,10 +226,11 @@ for ds in ds_list:
 
                         server_ds_pk, server_ds = ds_on_server.popitem()
                     else:
-                        print 'It seems the device server has not been add to the catalogue...'
+                        print 'It seems the device server has not been added to the catalogue...'
                         ds_problems.append(ds)
                         continue
-                else:
+                elif upload_readme or FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
+                    print 'Updating with XMI: %s' % xmi['name']
                     client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update', headers={'Referer':referrer})
                     referrer = SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update'
                     csrftoken = client.cookies['csrftoken']
@@ -241,10 +253,15 @@ for ds in ds_list:
                                 },
                                 files=files, headers={'Referer':referrer})
                     print 'Update result: %d' % r.status_code
+                    xmi_updated += 1
                     first_xmi = False
                     sleep(1)
+                else:
+                    xmi_not_changed += 1
+                    print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi['name']
 
-            else:
+            elif ds_adding or FORCE_UPDATE or date_parser.parse(server_ds['last_update']) < xmi['element']['date']:
+                print 'Updating with XMI: %s' % xmi['name']
                 client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update', headers={'Referer':referrer})
                 referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update'
                 csrftoken = client.cookies['csrftoken']
@@ -266,14 +283,21 @@ for ds in ds_list:
                                 'available_in_repository': True
                             }, headers={'Referer':referrer})
                 print 'Update result: %d' % r.status_code
+                xmi_updated += 1
                 sleep(1)
+            else:
+                xmi_not_changed += 1
+                print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi['name']
 
     except Exception as e:
         print e.message
         ds_problems.append(ds)
 
-print 'Skippend %d device servers' % len(ds_skipped)
-print 'Problems with %d device servers' % len(ds_problems)
+print 'Skippend %d device servers (no xmi files).' % len(ds_skipped)
+print 'Problems with %d device servers (errors in processing).' % len(ds_problems)
+
+print 'Count of updated or added XMI files: %d' % (xmi_added+xmi_updated)
+print 'Count of untouched (not changed) xmi files: %d ' % (xmi_not_changed)
 
 
 
