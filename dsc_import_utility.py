@@ -67,9 +67,9 @@ if TEST_SERVER_AUTH:
     print 'You are going to connect to test server which requires a basic authentication first.'
     ba_login = raw_input('Basic auth login: ')
     ba_password = getpass('Basic auth password: ')
-    client.get(SERVER_LOGIN_URL, auth=requests.auth.HTTPBasicAuth(ba_login, ba_password))  # sets the cookie
-else:
-    client.get(SERVER_LOGIN_URL)
+    client.auth = requests.auth.HTTPBasicAuth(ba_login, ba_password)
+
+client.get(SERVER_LOGIN_URL)
 
 csrftoken = client.cookies['csrftoken']
 print csrftoken
@@ -293,6 +293,8 @@ for ds in ds_list:
         print e.message
         ds_problems.append(ds)
 
+print '\nImport summary:'
+print '---------------------------'
 print 'Skippend %d device servers (no xmi files).' % len(ds_skipped)
 print 'Problems with %d device servers (errors in processing).' % len(ds_problems)
 
