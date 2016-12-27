@@ -22,6 +22,10 @@ LOG_PATH = '/home/piotr/tmp'  # where to log some information about import proce
 REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
 REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 
+# if one would like to limit searched treee (useful for one device server update and or tests)
+# do not provide start nor end slashes
+REPO_START_PATH = 'DeviceClasses'
+
 # Tango Controls or test server address
 SERVER_BASE_URL = 'http://www.tango-controls.org/'
 
@@ -32,9 +36,7 @@ REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PAT
 REMOTE_REPO_URL = 'http://%s/%s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH)
 LOCAL_REPO_URL = 'file://%s' % LOCAL_REPO_PATH
 
-# if one would like to limit searched treee (useful for one device server update and or tests)
-# do not provide start nor end slashes
-REPO_START_PATH = 'DeviceClasses'
+
 
 
 # settings for catalogue configuration on the server
