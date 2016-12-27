@@ -11,7 +11,7 @@ from dateutil import parser as date_parser
 from time import sleep
 
 FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
-TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
+TEST_SERVER_AUTH = True  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 
 # set the following variables to point to the repositories
@@ -23,7 +23,7 @@ REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
 REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 
 # Tango Controls or test server address
-SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
+SERVER_BASE_URL = 'http://deviceserver.tango-vm.webu.coop/'
 
 # command used to synchronize local repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
@@ -65,9 +65,9 @@ if not VERIFY_CERT:
 
 if TEST_SERVER_AUTH:
     print 'You are going to connect to test server which requires a basic authentication first.'
-    login = raw_input('Basic auth login: ')
-    password = getpass('Basic aoth password: ')
-    client.get(SERVER_LOGIN_URL, auth=requests.auth.HTTPBasicAuth('user', 'pass'))  # sets the cookie
+    ba_login = raw_input('Basic auth login: ')
+    ba_password = getpass('Basic auth password: ')
+    client.get(SERVER_LOGIN_URL, auth=requests.auth.HTTPBasicAuth(ba_login, ba_password))  # sets the cookie
 else:
     client.get(SERVER_LOGIN_URL)
 
