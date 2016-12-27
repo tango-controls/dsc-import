@@ -7,7 +7,7 @@ publicly available through http. It does it in the following way:
 
 - Make local copy of the repository to speed up a search for device servers procedure.
 
-- Search the local copy for folders containing .XMI files. It takes into account the standard _branches/tags/trunk_
+- Search the local copy for folders containing .XMI files. It takes into account the standard *branches/tags/trunk*
   structure. The folders where it findes .xmi files or a proper structure are listed as candidates to be device servers.
 
 - The list then is processed and compared (by repository URL) with content in the Catalogue.
