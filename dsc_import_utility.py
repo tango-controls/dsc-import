@@ -188,6 +188,10 @@ for ds in ds_list:
         else:
             auto_ds_name = True
 
+        development_status = 'new'
+        if ds.has_key('tag'):
+            development_status = 'released'
+
         for xmi in ds['xmi_files']:
             print "XMI file: %s" % xmi['name']
             xmi_url = REMOTE_REPO_URL + '/' + xmi['path'] + '/' + xmi['name']
@@ -201,6 +205,7 @@ for ds in ds_list:
                                 data={
                                     'csrfmiddlewaretoken': csrftoken,
                                     'ds_info_copy': auto_ds_name,
+                                    'development_status': development_status,
                                     'name': ds_name,
                                     'description': '',
                                     'xmi_file_url':xmi_url,
@@ -238,6 +243,7 @@ for ds in ds_list:
                                 data={
                                     'csrfmiddlewaretoken': csrftoken,
                                     'ds_info_copy': auto_ds_name,
+                                    'development_status': development_status,
                                     'name': ds_name,
                                     'description': '',
                                     'add_class': False,
@@ -270,6 +276,7 @@ for ds in ds_list:
                                 'csrfmiddlewaretoken': csrftoken,
                                 'ds_info_copy': False,
                                 'name': ds_name,
+                                'development_status': development_status,
                                 'description': '',
                                 'add_class': True,
                                 'xmi_file_url':xmi_url,
