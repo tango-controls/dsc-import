@@ -30,6 +30,7 @@ Requirements
       the following:
 
 .. code-block:: python
+
                 author = ''
                 if commit_node.find('author') is not None:
                     author = commit_node.find('author').text
