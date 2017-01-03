@@ -24,6 +24,15 @@ Requirements
 - Python2.7
 - Subversion
 - SVN python library :command "pip install svn"
+    - The library will not work if any of file in the SVN has no author defined which is the case for tango-ds repository
+      on the Sourceforge. To avoid problems one can edit :file:`svn/common.py` around line 358 to have something like
+      the following:
+
+.. code-block:: python
+                author = ''
+                if commit_node.find('author') is not None:
+                    author = commit_node.find('author').text
+
 - urllib2 library
 - Requests library version >= 2.12, you may need to run pip with --upgrade option
 
