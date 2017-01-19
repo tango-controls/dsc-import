@@ -28,6 +28,7 @@ REPO_START_PATH = 'DeviceClasses'
 
 # Tango Controls or test server address
 SERVER_BASE_URL = 'http://www.tango-controls.org/'
+#SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
 
 # command used to synchronize local repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
@@ -126,6 +127,8 @@ for ds in ds_list:
 
         print 'Check if device server already exists in the catalogue...'
 
+
+
         r = client.get(SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path'], headers={'Referer':referrer})
         referrer = SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path']
         ds_on_server = r.json()
@@ -149,6 +152,8 @@ for ds in ds_list:
 
         ds_repo_url = REMOTE_REPO_URL + '/' + ds['path']
 
+        repository_tag = ds.get('tag', '')
+
         # readme file
         upload_readme = False
         if len(ds['readme_files'])>0:
@@ -169,7 +174,8 @@ for ds in ds_list:
                     print "README date on SVN: %s" % readme_file['element']['date']
                     print "README date in the catalogue: %s" % date_parser.parse(server_ds['last_update'])
                     # get file from the server
-                    readme_url_response = urllib2.urlopen(REMOTE_REPO_URL+'/'+readme_file['path'])
+                    readme_url_response = urllib2.urlopen(REMOTE_REPO_URL + '/' + readme_file['path'] + \
+                                                          '/' + readme_file['name'])
                     readme_file_size = int(readme_url_response.info().get('Content-Length',0))
                     if readme_file_size < 5 or readme_file_size > 2000000:
                         print 'Readme file sieze %d is out of limits. Skipping.' % readme_file_size
@@ -197,6 +203,9 @@ for ds in ds_list:
         for xmi in ds['xmi_files']:
             print "XMI file: %s" % xmi['name']
             xmi_url = REMOTE_REPO_URL + '/' + xmi['path'] + '/' + xmi['name']
+            # skip
+            if str(xmi['name']).lower().endswith('.multi.xmi'):
+                continue
 
             if first_xmi:
                 if ds_adding:
@@ -216,13 +225,13 @@ for ds in ds_list:
                                     'use_uploaded_xmi_file': False,
                                     'repository_url': ds_repo_url,
                                     'repository_type': 'SVN',
+                                    'repository_tag': repository_tag,
                                     'upload_readme': upload_readme,
                                     'submit': 'create',
                                     'available_in_repository': True
                                 },
                                 files=files,  headers={'Referer':referrer})
-                    first_xmi = False
-                    xmi_added += 1
+
                     print 'Adding result: %d' % r.status_code
 
                     sleep(1)
@@ -230,8 +239,9 @@ for ds in ds_list:
                     referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
                     ds_on_server = r.json()
                     if len(ds_on_server) == 1:
-
                         server_ds_pk, server_ds = ds_on_server.popitem()
+                        first_xmi = False
+                        xmi_added += 1
                     else:
                         print 'It seems the device server has not been added to the catalogue...'
                         ds_problems.append(ds)
@@ -255,6 +265,7 @@ for ds in ds_list:
                                     'use_uploaded_xmi_file': False,
                                     'repository_url': ds_repo_url,
                                     'repository_type': 'SVN',
+                                    'repository_tag': repository_tag,
                                     'upload_readme': upload_readme,
                                     'submit': 'update',
                                     'available_in_repository': True
@@ -282,13 +293,14 @@ for ds in ds_list:
                                 'description': '',
                                 'add_class': True,
                                 'xmi_file_url':xmi_url,
-                                    'use_url_xmi_file': True,
-                                    'use_manual_info': False,
-                                    'use_uploaded_xmi_file': False,
-                                    'repository_url': ds_repo_url,
-                                    'repository_type': 'SVN',
-                                    'upload_readme': False,
-                                    'submit': 'update',
+                                'use_url_xmi_file': True,
+                                'use_manual_info': False,
+                                'use_uploaded_xmi_file': False,
+                                'repository_url': ds_repo_url,
+                                'repository_type': 'SVN',
+                                'repository_tag': repository_tag,
+                                'upload_readme': False,
+                                'submit': 'update',
                                 'available_in_repository': True
                             }, headers={'Referer':referrer})
                 print 'Update result: %d' % r.status_code
