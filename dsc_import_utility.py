@@ -27,8 +27,8 @@ REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 REPO_START_PATH = 'DeviceClasses'
 
 # Tango Controls or test server address
-SERVER_BASE_URL = 'http://www.tango-controls.org/'
-#SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
+#SERVER_BASE_URL = 'http://www.tango-controls.org/'
+SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
 
 # command used to synchronize local repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
