@@ -215,6 +215,8 @@ def get_device_servers_list(repo, path_base, max_depth):
         if newest_tag is not None:
             ds_list[len(ds_list) - 1]['tag'] = newest_tag
             ds_list[len(ds_list) - 1]['readme_files'] = tag_readme_files
+        elif len(trunk_readme_files)>0:
+            ds_list[len(ds_list) - 1]['readme_files'] = trunk_readme_files
         elif len(src_readme_files)>0:
             ds_list[len(ds_list) - 1]['readme_files'] = src_readme_files
         elif len(local_readme_files) > 0:
