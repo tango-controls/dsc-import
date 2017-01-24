@@ -46,7 +46,7 @@ REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 
 # if one would like to limit searched treee (useful for one device server update and or tests)
 # do not provide start nor end slashes
-REPO_START_PATH = 'DeviceClasses/Vacuum'
+REPO_START_PATH = 'DeviceClasses'
 
 # Tango Controls or test server address
 #SERVER_BASE_URL = 'http://www.tango-controls.org/'

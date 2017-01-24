@@ -103,6 +103,7 @@ def get_device_servers_list(repo, path_base, max_depth):
     local_xmi_files = []
     local_readme_files = []
     candidate_for_ds = False
+    newest_tag = None
     # iterate through the list
     for element in objects_list:
 
@@ -211,6 +212,14 @@ def get_device_servers_list(repo, path_base, max_depth):
     elif candidate_for_ds:
         print 'No xmi files found for this candidate.'
         ds_list.append({'path':path_base, 'xmi_files':[], 'readme_files':[] })
+        if newest_tag is not None:
+            ds_list[len(ds_list) - 1]['tag'] = newest_tag
+            ds_list[len(ds_list) - 1]['readme_files'] = tag_readme_files
+        elif len(src_readme_files)>0:
+            ds_list[len(ds_list) - 1]['readme_files'] = src_readme_files
+        elif len(local_readme_files) > 0:
+            ds_list[len(ds_list) - 1]['readme_files'] = local_readme_files
+
     # except Exception as e:
     #    print 'Exception message outer: %s' %e.message
         # raise e
