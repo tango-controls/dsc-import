@@ -214,8 +214,8 @@ for ds in ds_list:
         r = client.get(SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path'], headers={'Referer':referrer})
         referrer = SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path']
         ds_on_server = r.json()
-        print "The following device servers match repository are in the catalogue: "
-        print ds_on_server
+        # print "The following device servers match repository are in the catalogue: "
+        # print ds_on_server
 
         if len(ds_on_server)>1:
             print 'There are %d device servers registered with this repository path. ' \
