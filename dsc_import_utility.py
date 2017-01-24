@@ -26,11 +26,12 @@ import requests.packages
 import os.path
 import os
 from dateutil import parser as date_parser
+from datetime import datetime
 from time import sleep
 import re
 from xmi_from_html import get_xmi_from_html
 
-FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
+FORCE_UPDATE = True  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
@@ -50,6 +51,7 @@ REPO_START_PATH = 'DeviceClasses/Vacuum'
 # Tango Controls or test server address
 #SERVER_BASE_URL = 'http://www.tango-controls.org/'
 SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
+#SERVER_BASE_URL = 'http://localhost:8080/'
 
 # command used to synchronize local repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
@@ -184,17 +186,20 @@ for ds in ds_list:
                     ds_problems.append(ds)
                     continue
 
-                xmi_content = get_xmi_from_html(description_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Description.html',
+                xmi_content = get_xmi_from_html(description_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/ClassDescription.html',
                                                 attributes_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Attributes.html',
                                                 commands_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Commands.html',
                                                 properties_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Properties.html'
                                                 )
                 print 'XMI from doc size is %d.' % len(xmi_content)
                 files['xmi_file'] = (ds_name+'.xmi',xmi_content)
+                with open(LOG_PATH+'/'+files['xmi_file'][0],'wb') as f:
+                    f.write(xmi_content)
 
                 ds['xmi_files'] = [{
                     'name': ds_name+'.xmi',
-                    'path': ''
+                    'path': '',
+                    'element': { 'date': str(datetime.now()) }
                 },]
 
 
@@ -304,6 +309,9 @@ for ds in ds_list:
                                 files=files,  headers={'Referer':referrer})
 
                     print 'Adding result: %d' % r.status_code
+                    f = open(LOG_PATH + '/add-result.html','wb')
+                    f.write(r.content)
+                    f.close()
 
                     sleep(1)
                     r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],  headers={'Referer':referrer})
@@ -313,10 +321,12 @@ for ds in ds_list:
                         server_ds_pk, server_ds = ds_on_server.popitem()
                         first_xmi = False
                         xmi_added += 1
+                        print 'The device server has been added to the catalogue.'
                     else:
                         print 'It seems the device server has not been added to the catalogue...'
                         ds_problems.append(ds)
                         break
+
                 elif upload_readme or FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
                     print 'Updating with XMI: %s' % xmi['name']
                     client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update', headers={'Referer':referrer})
@@ -343,7 +353,26 @@ for ds in ds_list:
                                 },
                                 files=files, headers={'Referer':referrer})
                     print 'Update result: %d' % r.status_code
-                    xmi_updated += 1
+
+                    r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'], headers={'Referer': referrer})
+                    referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
+                    ds_on_server = r.json()
+                    if len(ds_on_server) == 1:
+                        u_server_ds_pk, u_server_ds = ds_on_server.popitem()
+                        if date_parser.parse(server_ds['last_update'])<date_parser.parse(u_server_ds['last_update']):
+                            server_ds = u_server_ds
+                            print '.XMI has been successfully updated in the catalogue.'
+                            first_xmi = False
+                            xmi_updated += 1
+                        else:
+                            print 'It seems the device server has not been properly updated in the catalogue...'
+                            ds_problems.append(ds)
+                            break
+                    else:
+                        print 'It seems the device server has not been properly updated in the catalogue...'
+                        ds_problems.append(ds)
+                        break
+
                     first_xmi = False
                     sleep(1)
                 else:
@@ -395,6 +424,8 @@ print 'Problems with %d device servers (errors in processing).' % len(ds_problem
 
 print 'Count of updated or added XMI files: %d' % (xmi_added+xmi_updated)
 print 'Count of untouched (not changed) xmi files: %d ' % (xmi_not_changed)
+
+
 
 
 

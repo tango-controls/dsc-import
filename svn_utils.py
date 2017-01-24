@@ -121,8 +121,8 @@ def get_device_servers_list(repo, path_base, max_depth):
                 newest_tag = None
                 newest_date = datetime.datetime.now()
                 try:
-                    print '----------------------'
-                    print 'Available tags:'
+                    # print '----------------------'
+                    # print 'Available tags:'
                     for t in repo.list(extended=True, rel_path=path_base+'/tags'):
                         try:
                             print '%s' % t['name']
@@ -143,7 +143,6 @@ def get_device_servers_list(repo, path_base, max_depth):
                 tag_xmi_files = find_xmi(repo=repo, path_base=path_base+'/tags/'+newest_tag, max_depth=max_depth-1)
                 tag_readme_files = find_readme(repo=repo, path_base=path_base + '/tags/' + newest_tag,
                                          max_depth=max_depth - 1)
-                print 'Number of .xmi files in tag %s: %d' % (newest_tag, len(newest_tag))
 
 
             elif element['name']=='trunk':
@@ -181,6 +180,7 @@ def get_device_servers_list(repo, path_base, max_depth):
 
     # check if we are a device server
     if len(tag_xmi_files)>0:
+        print 'Number of .xmi files in tag %s: %d' % (newest_tag, len(tag_xmi_files))
         ds_list.append({'path':path_base,
                         'xmi_files':tag_xmi_files,
                         'tag':newest_tag,
@@ -188,24 +188,28 @@ def get_device_servers_list(repo, path_base, max_depth):
                         })
 
     elif len(trunk_xmi_files)>0:
+        print 'Number of .xmi files in trunk: %d' % len(trunk_xmi_files)
         ds_list.append({'path': path_base,
                         'xmi_files': trunk_xmi_files,
                         'readme_files':trunk_readme_files
                         })
 
     elif len(src_xmi_files)>0:
+        print 'Number of .xmi files in src: %d' % len(src_xmi_files)
         ds_list.append({'path': path_base,
                         'xmi_files': src_xmi_files,
                         'readme_files': src_readme_files
                         })
 
     elif len(local_xmi_files)>0:
+        print 'Number of .xmi files in ./: %d' % len(local_xmi_files)
         ds_list.append( {'path': path_base,
                         'xmi_files': local_xmi_files,
                          'readme_files': local_readme_files
                         } )
 
     elif candidate_for_ds:
+        print 'No xmi files found for this candidate.'
         ds_list.append({'path':path_base, 'xmi_files':[], 'readme_files':[] })
     # except Exception as e:
     #    print 'Exception message outer: %s' %e.message
