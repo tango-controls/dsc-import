@@ -125,7 +125,7 @@ def get_device_servers_list(repo, path_base, max_depth):
                     # print 'Available tags:'
                     for t in repo.list(extended=True, rel_path=path_base+'/tags'):
                         try:
-                            print '%s' % t['name']
+                            # print '%s' % t['name']
                             if t['is_directory'] and (newest_tag is None or t['date']>newest_date):
                                 newest_tag = t['name']
                                 newest_date = t['date']
