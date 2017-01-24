@@ -139,8 +139,9 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.
         # key words
         if el.text is not None and el.text.strip().lower() == 'key word(s)':
             for kw in str(el.getnext().text).split(':'):
-                kw_el = etree.SubElement(identification_xml,'keyWords')
-                kw_el.text = str(kw).strip()
+                if str(kw).strip()!='':
+                    kw_el = etree.SubElement(identification_xml,'keyWords')
+                    kw_el.text = str(kw).strip()
 
         # author
         if el.text is not None and el.text.strip().lower() == 'author':
@@ -167,12 +168,13 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.
             identification_xml.set('reference', str(el.getnext().text).split(':')[1].strip())
 
     description_is_comming = False
+    description_xml.set('description','')
     # serch for descritpion text itself
     for el in description_parser.iter():
         if el.text is not None and el.text.strip() == '%s Class Description :' % classes_xml.get('name'):
             description_is_comming = True
-        if description_is_comming and el.tag=='ul' and el.text is not None:
-            description_xml.set('description', el.text.strip())
+        if description_is_comming and el.tag=='ul' and el.text_content() is not None:
+            description_xml.set('description', el.text_content().strip())
 
     # attributes
     headers = []
@@ -209,7 +211,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.
                                     tango_type += type_parsed.group(g).capitalize()
                             # print tango_type
                             etree.SubElement(attribute_xml, 'dataType',
-                                             attrib={etree.QName('http://www.omg.org/XMI','type'): 'pogoDsl:' +
+                                             attrib={etree.QName('http://www.w3.org/2001/XMLSchema-instance','type'): 'pogoDsl:' +
                                                             DS_ATTRIBUTE_DATATYPES_REVERS.get(tango_type,'Unknown')})
 
                     i += 1
@@ -253,7 +255,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.
                             # print '%s: %s' % (tango_type, DS_COMMAND_DATATYPES_REVERS.get(tango_type, 'Unknown'))
                             argin_xml = etree.SubElement(command_xml,'argin')
                             etree.SubElement(argin_xml, 'type',
-                                             attrib={etree.QName('http://www.omg.org/XMI', 'type'): 'pogoDsl:' +
+                                             attrib={etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'): 'pogoDsl:' +
                                                                 DS_COMMAND_DATATYPES_REVERS.get(tango_type, 'Unknown')})
                     if headers[i] == 'output type':
                         # print 'output:'
@@ -269,7 +271,7 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.
                             # print '%s: %s' % (tango_type, DS_COMMAND_DATATYPES_REVERS.get(tango_type, 'Unknown'))
                             argout_xml = etree.SubElement(command_xml,'argout')
                             etree.SubElement(argout_xml, 'type',
-                                             attrib={etree.QName('http://www.omg.org/XMI', 'type'): 'pogoDsl:' +
+                                             attrib={etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'): 'pogoDsl:' +
                                                                 DS_COMMAND_DATATYPES_REVERS.get(tango_type, 'Unknown')})
 
                     i += 1
@@ -297,24 +299,25 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.
                     if headers[i] == 'name':
                         property_xml.set('name', td.text_content().strip())
 
-                    if headers[i] == 'descritpion':
+                    if headers[i] == 'description':
                         property_xml.set('description', td.text_content().strip())
 
                     if headers[i] == 'type':
                         property_type_xml = etree.SubElement(property_xml,'type')
-                        property_type_xml.set(etree.QName('http://www.omg.org/XMI', 'type'),
+                        property_type_xml.set(etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'),
                                          'pogoDsl:'+ td.text_content().strip().capitalize() + 'Type')
 
                     i += 1
 
 
-    return etree.tostring(xmi_xml)
+    return '<?xml version="1.0" encoding="ASCII"?>'+etree.tostring(xmi_xml)
 
 def test_xmi_from_html():
 
     URLs = [
-        "http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/tango-ds/Motion/GalilDMCMotor/",
-        "http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/tango-ds/System/TangoTest"
+        "http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/tango-ds/Motion/GalilDMCMotor",
+        "http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/tango-ds/System/TangoTest",
+        "http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/tango-ds/Vacuum/AxtranGaugeController",
     ]
 
     for url in URLs:
@@ -328,6 +331,9 @@ def test_xmi_from_html():
 
         print "\nXMI content:"
         print xmi;
+        f = open('/home/piotr/tmp/xmi_test.xmi','w')
+        f.write(xmi)
+        f.close()
         print "--------------------------------"
         print
 

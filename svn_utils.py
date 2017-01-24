@@ -41,7 +41,7 @@ def find_xmi(repo, path_base, max_depth):
 
             # add just local files
             if os.path.splitext(element['name'])[1]=='.XMI' or os.path.splitext(element['name'])[1]=='.xmi':
-                print "File: %s" % element['name']
+                # print "File: %s" % element['name']
                 xmi_list.append({'name': element['name'],
                                         'path': path_base,
                                         'element': element
@@ -71,7 +71,7 @@ def find_readme(repo, path_base, max_depth):
 
             # add just local files
             if os.path.splitext(element['name'])[0] in ['Readme', 'README']:
-                print "File: %s" % element['name']
+                # print "File: %s" % element['name']
                 readme_list.append({'name': element['name'],
                                         'path': path_base,
                                         'element': element
@@ -110,7 +110,7 @@ def get_device_servers_list(repo, path_base, max_depth):
             continue
         # if it is a directory
         if element['is_directory']:
-            print element
+            # print element
 
             if element['name'] in ['tags','trunk', 'src']:
                 candidate_for_ds = True
@@ -143,7 +143,7 @@ def get_device_servers_list(repo, path_base, max_depth):
                 tag_xmi_files = find_xmi(repo=repo, path_base=path_base+'/tags/'+newest_tag, max_depth=max_depth-1)
                 tag_readme_files = find_readme(repo=repo, path_base=path_base + '/tags/' + newest_tag,
                                          max_depth=max_depth - 1)
-                print 'Xmi files in tag %s:' % len(newest_tag)
+                print 'Number of .xmi files in tag %s: %d' % (newest_tag, len(newest_tag))
 
 
             elif element['name']=='trunk':
@@ -166,14 +166,14 @@ def get_device_servers_list(repo, path_base, max_depth):
 
             # add just local files
             if os.path.splitext(element['name'])[1]=='.XMI' or os.path.splitext(element['name'])[1]=='.xmi':
-                print "File: %s" % element['name']
+                # print "File: %s" % element['name']
                 local_xmi_files.append({'name':element['name'],
                                         'path':path_base,
                                         'element':element
                                         })
 
             if os.path.splitext(element['name'])[0] in ['Readme', 'README']:
-                print "File: %s" % element['name']
+                # print "File: %s" % element['name']
                 local_readme_files.append({'name': element['name'],
                                         'path': path_base,
                                         'element': element
@@ -206,7 +206,7 @@ def get_device_servers_list(repo, path_base, max_depth):
                         } )
 
     elif candidate_for_ds:
-        ds_list.append({'path':path_base, 'xmi_files':[] })
+        ds_list.append({'path':path_base, 'xmi_files':[], 'readme_files':[] })
     # except Exception as e:
     #    print 'Exception message outer: %s' %e.message
         # raise e

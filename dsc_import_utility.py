@@ -27,10 +27,13 @@ import os.path
 import os
 from dateutil import parser as date_parser
 from time import sleep
+import re
+from xmi_from_html import get_xmi_from_html
 
 FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
+USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
 
 # set the following variables to point to the repositories
 
@@ -42,11 +45,11 @@ REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 
 # if one would like to limit searched treee (useful for one device server update and or tests)
 # do not provide start nor end slashes
-REPO_START_PATH = 'DeviceClasses'
+REPO_START_PATH = 'DeviceClasses/Vacuum'
 
 # Tango Controls or test server address
-SERVER_BASE_URL = 'http://www.tango-controls.org/'
-#SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
+#SERVER_BASE_URL = 'http://www.tango-controls.org/'
+SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
 
 # command used to synchronize local repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
@@ -55,7 +58,7 @@ REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PAT
 REMOTE_REPO_URL = 'http://%s/%s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH)
 LOCAL_REPO_URL = 'file://%s' % LOCAL_REPO_PATH
 
-
+DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/tango-ds/'
 
 
 # settings for catalogue configuration on the server
@@ -66,6 +69,8 @@ SERVER_ADD_URL = SERVER_BASE_URL+'resources/dsc/add/'
 SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
 
 SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'
+
+FAMILY_FROM_PATH_PARSER = r'DeviceClasses/([A-Za-z]*)/.*'
 
 # process of importing:
 
@@ -138,35 +143,88 @@ for ds in ds_list:
     print '------------------------------------'
     print 'Processing %s' % ds['path']
     try:
+        # device server name:
+        ds_name = os.path.basename(ds['path'])
+        if len(ds_name) > 0:
+            auto_ds_name = False
+            print 'Device server name from path: %s' % ds_name
+        else:
+            auto_ds_name = True
+            print 'Cannot guess name of device server from the path.'
+        # developement status
+        development_status = 'new'
+        if ds.has_key('tag'):
+            development_status = 'released'
+
+        family_parsed = re.match(FAMILY_FROM_PATH_PARSER, ds['path'])
+        family = None
+
+        if family_parsed is not None:
+            family = family_parsed.group(1)
+            if family is not None:
+                print "Class family from the path is %s." % family
+
+
+        xmi_from_doc = False
+        xmi_from_url = True
+        xmi_content = ''
+        files = {}
+
+        # case when there is no .xmi files
+
         if len(ds['xmi_files'])==0:
-            print 'No .xmi files found in this path. Skipping.'
-            ds_skipped.append(ds)
-            continue
+            print 'No .xmi files found in this path.'
+            # can use documentation if device server name can be guessed.
+            if USE_DOC_FOR_NON_XMI and not auto_ds_name:
+                print 'Trying to use documentation to build an .xmi file.'
+                xmi_from_doc = True
+                xmi_from_url = False
+                if family is None:
+                    print 'Cannot parse the path for a family!'
+                    ds_problems.append(ds)
+                    continue
 
-        print 'Check if device server already exists in the catalogue...'
+                xmi_content = get_xmi_from_html(description_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Description.html',
+                                                attributes_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Attributes.html',
+                                                commands_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Commands.html',
+                                                properties_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Properties.html'
+                                                )
+                print 'XMI from doc size is %d.' % len(xmi_content)
+                files['xmi_file'] = (ds_name+'.xmi',xmi_content)
+
+                ds['xmi_files'] = [{
+                    'name': ds_name+'.xmi',
+                    'path': ''
+                },]
 
 
+            else:
+                print 'Skipping this path.'
+                ds_skipped.append(ds)
+                continue
+
+
+        print 'Checking if the device server already exists in the catalogue...'
 
         r = client.get(SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path'], headers={'Referer':referrer})
         referrer = SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path']
         ds_on_server = r.json()
-        print "Devcie servers in the catalogu: "
-        print  ds_on_server
+        print "The following device servers match repository are in the catalogue: "
+        print ds_on_server
+
         if len(ds_on_server)>1:
             print 'There are %d device servers registered with this repository path. ' \
-                  'Import utility does not handle such case. Skipping.  '
+                  'Import utility does not handle such a case. Skipping.  '
             ds_skipped.append(ds)
             continue
 
-        files = {}
-
         if len(ds_on_server)==1:
-            print 'This device server already exists in catalogue. Will do update if necessary.'
+            print 'This device server already exists in the catalogue. It will be updated if necessary.'
             server_ds_pk, server_ds = ds_on_server.popitem()
             ds_adding = False
         else:
             ds_adding = True
-            print 'This is a new device server. Will add to catalogue.'
+            print 'This is a new device server. It will  be added to the catalogue.'
 
         ds_repo_url = REMOTE_REPO_URL + '/' + ds['path']
 
@@ -184,39 +242,34 @@ for ds in ds_list:
                                                          '.rst', '.RST',
                                                          '.pdf', '.PDF',
                                                          '.html', '.HTML', '.htm', '.HTM']:
-                print 'Will skip file of unknown extension.'
+                print 'I will skip file of unknown extension.'
             else:
-
                 if ds_adding or FORCE_UPDATE or \
                         date_parser.parse(server_ds['last_update']) < readme_file['element']['date']:
-                    print "README date on SVN: %s" % readme_file['element']['date']
-                    print "README date in the catalogue: %s" % date_parser.parse(server_ds['last_update'])
+                    # print "README date on SVN: %s" % readme_file['element']['date']
+                    # print "README date in the catalogue: %s" % date_parser.parse(server_ds['last_update'])
                     # get file from the server
                     readme_url_response = urllib2.urlopen(REMOTE_REPO_URL + '/' + readme_file['path'] + \
                                                           '/' + readme_file['name'])
                     readme_file_size = int(readme_url_response.info().get('Content-Length',0))
                     if readme_file_size < 5 or readme_file_size > 2000000:
-                        print 'Readme file sieze %d is out of limits. Skipping.' % readme_file_size
+                        print 'Readme file size %d is out of limits. Skipping.' % readme_file_size
                     else:
                         print 'It will be uploaded.'
                         read_file_content=readme_url_response.read()
-                        files = {'readme_file': (readme_name, read_file_content)}
+                        files['readme_file'] = (readme_name, read_file_content)
                         upload_readme = 1
                 else:
                     print 'Will skip the readme upload since it is elder than the last update of device server.'
 
-
-        # xmis
+        # .XMIs
         first_xmi=True
-        ds_name = os.path.basename(ds['path'])
-        if len(ds_name)>0:
-            auto_ds_name = False
-        else:
-            auto_ds_name = True
 
-        development_status = 'new'
-        if ds.has_key('tag'):
-            development_status = 'released'
+        # print 'Files to be uploaded:'
+        # print files
+
+        # print 'XMI files: '
+        # print ds['xmi_files']
 
         for xmi in ds['xmi_files']:
             print "XMI file: %s" % xmi['name']
@@ -238,9 +291,9 @@ for ds in ds_list:
                                     'name': ds_name,
                                     'description': '',
                                     'xmi_file_url':xmi_url,
-                                    'use_url_xmi_file': 1,
+                                    'use_url_xmi_file': xmi_from_url,
                                     'use_manual_info': False,
-                                    'use_uploaded_xmi_file': False,
+                                    'use_uploaded_xmi_file': xmi_from_doc,
                                     'repository_url': ds_repo_url,
                                     'repository_type': 'SVN',
                                     'repository_tag': repository_tag,
@@ -263,7 +316,7 @@ for ds in ds_list:
                     else:
                         print 'It seems the device server has not been added to the catalogue...'
                         ds_problems.append(ds)
-                        continue
+                        break
                 elif upload_readme or FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
                     print 'Updating with XMI: %s' % xmi['name']
                     client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update', headers={'Referer':referrer})
@@ -278,9 +331,9 @@ for ds in ds_list:
                                     'description': '',
                                     'add_class': False,
                                     'xmi_file_url':xmi_url,
-                                    'use_url_xmi_file': 1,
+                                    'use_url_xmi_file': xmi_from_url,
                                     'use_manual_info': False,
-                                    'use_uploaded_xmi_file': False,
+                                    'use_uploaded_xmi_file': xmi_from_doc,
                                     'repository_url': ds_repo_url,
                                     'repository_type': 'SVN',
                                     'repository_tag': repository_tag,
@@ -311,9 +364,9 @@ for ds in ds_list:
                                 'description': '',
                                 'add_class': True,
                                 'xmi_file_url':xmi_url,
-                                'use_url_xmi_file': True,
+                                'use_url_xmi_file': xmi_from_url,
                                 'use_manual_info': False,
-                                'use_uploaded_xmi_file': False,
+                                'use_uploaded_xmi_file': xmi_from_doc,
                                 'repository_url': ds_repo_url,
                                 'repository_type': 'SVN',
                                 'repository_tag': repository_tag,
@@ -327,6 +380,9 @@ for ds in ds_list:
             else:
                 xmi_not_changed += 1
                 print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi['name']
+
+
+
 
     except Exception as e:
         print e.message
