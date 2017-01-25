@@ -27,11 +27,12 @@ import os.path
 import os
 from dateutil import parser as date_parser
 from datetime import datetime
+from pytz import utc
 from time import sleep
 import re
 from xmi_from_html import get_xmi_from_html
 
-FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
+FORCE_UPDATE = True  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
@@ -46,7 +47,7 @@ REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 
 # if one would like to limit searched treee (useful for one device server update and or tests)
 # do not provide start nor end slashes
-REPO_START_PATH = 'DeviceClasses'
+REPO_START_PATH = 'DeviceClasses/Vacuum'
 
 # Tango Controls or test server address
 #SERVER_BASE_URL = 'http://www.tango-controls.org/'
@@ -199,7 +200,7 @@ for ds in ds_list:
                 ds['xmi_files'] = [{
                     'name': ds_name+'.xmi',
                     'path': '',
-                    'element': { 'date': datetime.now() }
+                    'element': { 'date': datetime.now(utc) }
                 },]
 
 
@@ -280,7 +281,7 @@ for ds in ds_list:
             print "XMI file: %s" % xmi['name']
             xmi_url = REMOTE_REPO_URL + '/' + xmi['path'] + '/' + xmi['name']
             # skip
-            if str(xmi['name']).lower().endswith('.multi.xmi'):
+            if str(xmi['name']).strip().lower().endswith('.multi.xmi'):
                 continue
 
             if first_xmi:
