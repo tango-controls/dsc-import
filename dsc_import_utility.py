@@ -327,7 +327,7 @@ for ds in ds_list:
                         ds_problems.append(ds)
                         break
 
-                elif upload_readme or FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
+                elif FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
                     print 'Updating with XMI: %s' % xmi['name']
                     client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update', headers={'Referer':referrer})
                     referrer = SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update'
