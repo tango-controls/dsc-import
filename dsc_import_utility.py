@@ -32,10 +32,11 @@ from time import sleep
 import re
 from xmi_from_html import get_xmi_from_html
 
-FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
+FORCE_UPDATE = True  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
+
 
 # set the following variables to point to the repositories
 
@@ -47,12 +48,12 @@ REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 
 # if one would like to limit searched treee (useful for one device server update and or tests)
 # do not provide start nor end slashes
-REPO_START_PATH = 'DeviceClasses'
+REPO_START_PATH = 'DeviceClasses/Vacuum'
 
 # Tango Controls or test server address
-SERVER_BASE_URL = 'http://www.tango-controls.org/'
+# SERVER_BASE_URL = 'http://www.tango-controls.org/'
 # SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
-# SERVER_BASE_URL = 'http://localhost:8080/'
+SERVER_BASE_URL = 'http://localhost:8080/'
 
 # command used to synchronize local repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
@@ -146,6 +147,8 @@ for ds in ds_list:
     print '------------------------------------'
     print 'Processing %s' % ds['path']
     try:
+
+
         # device server name:
         ds_name = os.path.basename(ds['path'])
         if len(ds_name) > 0:
@@ -220,7 +223,7 @@ for ds in ds_list:
 
         if len(ds_on_server)>1:
             print 'There are %d device servers registered with this repository path. ' \
-                  'Import utility does not handle such a case. Skipping.  '
+                  'Import utility does not handle such a case. Skipping.  ' % len(ds_on_server)
             ds_skipped.append(ds)
             continue
 
@@ -228,6 +231,9 @@ for ds in ds_list:
             print 'This device server already exists in the catalogue. It will be updated if necessary.'
             server_ds_pk, server_ds = ds_on_server.popitem()
             ds_adding = False
+            if server_ds['last_update_method'] == 'manual':
+                print 'This device server has been updated manually on the server. It will not be updated via script.'
+                continue
         else:
             ds_adding = True
             print 'This is a new device server. It will  be added to the catalogue.'
@@ -310,9 +316,7 @@ for ds in ds_list:
                                 files=files,  headers={'Referer':referrer})
 
                     print 'Adding result: %d' % r.status_code
-                    f = open(LOG_PATH + '/add-result.html','wb')
-                    f.write(r.content)
-                    f.close()
+                    add_result = r
 
                     sleep(1)
                     r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],  headers={'Referer':referrer})
@@ -326,6 +330,9 @@ for ds in ds_list:
                     else:
                         print 'It seems the device server has not been added to the catalogue...'
                         ds_problems.append(ds)
+                        f = open(LOG_PATH + '/problematic-add-result.html', 'wb')
+                        f.write(add_result.content)
+                        f.close()
                         break
 
                 elif FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
@@ -339,6 +346,7 @@ for ds in ds_list:
                                     'ds_info_copy': auto_ds_name,
                                     'development_status': development_status,
                                     'name': ds_name,
+                                    'last_update_method': server_ds['last_update_method'],
                                     'description': '',
                                     'add_class': False,
                                     'xmi_file_url':xmi_url,
@@ -354,6 +362,7 @@ for ds in ds_list:
                                 },
                                 files=files, headers={'Referer':referrer})
                     print 'Update result: %d' % r.status_code
+                    update_result = r
 
                     r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'], headers={'Referer': referrer})
                     referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
@@ -368,6 +377,9 @@ for ds in ds_list:
                         else:
                             print 'It seems the device server has not been properly updated in the catalogue...'
                             ds_problems.append(ds)
+                            f = open(LOG_PATH + '/problematic-update-result.html', 'wb')
+                            f.write(update_result.content)
+                            f.close()
                             break
                     else:
                         print 'It seems the device server has not been properly updated in the catalogue...'
@@ -390,6 +402,7 @@ for ds in ds_list:
                                 'csrfmiddlewaretoken': csrftoken,
                                 'ds_info_copy': False,
                                 'name': ds_name,
+                                'last_update_method': server_ds['last_update_method'],
                                 'development_status': development_status,
                                 'description': '',
                                 'add_class': True,
