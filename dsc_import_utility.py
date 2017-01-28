@@ -36,6 +36,7 @@ FORCE_UPDATE = False  # when True no time stamp are checked and updates are perf
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
+ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
 
 
 # set the following variables to point to the repositories
@@ -170,6 +171,23 @@ for ds in ds_list:
             if family is not None:
                 print "Class family from the path is %s." % family
 
+        documentation_URL = ''
+        documentation_title = ''
+        link_documentation = False
+        if ADD_LINK_TO_DOCUMENTATION:
+            if family is not None:
+                documentation_URL = DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/'+ ds_name + '.pdf'
+                documentation_title = 'PDF generated from POGO'
+
+                doc_check_client = requests.session()
+                r = requests.get(documentation_URL, allow_redirects=False)
+                if r.status_code!=200:
+                    print 'It seems this device server is not documented in a standard path.'
+                    link_documentation = False
+                else:
+                    link_documentation = True
+            else:
+                print 'Cannot link documentation since a class family has not been properly detected.'
 
         xmi_from_doc = False
         xmi_from_url = True
@@ -234,6 +252,16 @@ for ds in ds_list:
             if server_ds['last_update_method'] == 'manual':
                 print 'This device server has been updated manually on the server. It will not be updated via script.'
                 continue
+            doc_pk = ''
+            if link_documentation:
+                for doc in server_ds['documentation']:
+                    if doc['updated_by_script']:
+                        if doc['title']!=documentation_title or doc['url']!=documentation_URL:
+                            doc_pk = doc['pk']
+                            break
+                        else:
+                            link_documentation = False
+
         else:
             ds_adding = True
             print 'This is a new device server. It will  be added to the catalogue.'
@@ -241,6 +269,8 @@ for ds in ds_list:
         ds_repo_url = REMOTE_REPO_URL + '/' + ds['path']
 
         repository_tag = ds.get('tag', '')
+
+
 
         # readme file
         upload_readme = False
@@ -298,6 +328,7 @@ for ds in ds_list:
                     r = client.post(SERVER_ADD_URL,
                                 data={
                                     'csrfmiddlewaretoken': csrftoken,
+                                    'script_operation': True,
                                     'ds_info_copy': auto_ds_name,
                                     'development_status': development_status,
                                     'name': ds_name,
@@ -311,7 +342,12 @@ for ds in ds_list:
                                     'repository_tag': repository_tag,
                                     'upload_readme': upload_readme,
                                     'submit': 'create',
-                                    'available_in_repository': True
+                                    'available_in_repository': True,
+                                    'other_documentation1': link_documentation,
+                                    'documentation1_title': documentation_title,
+                                    'documentation1_url': documentation_URL,
+                                    'documentation1_pk': doc_pk,
+                                    'documentation1_type': 'Generated'
                                 },
                                 files=files,  headers={'Referer':referrer})
 
@@ -343,6 +379,7 @@ for ds in ds_list:
                     r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update',
                                 data={
                                     'csrfmiddlewaretoken': csrftoken,
+                                    'script_operation': True,
                                     'ds_info_copy': auto_ds_name,
                                     'development_status': development_status,
                                     'name': ds_name,
@@ -358,7 +395,12 @@ for ds in ds_list:
                                     'repository_tag': repository_tag,
                                     'upload_readme': upload_readme,
                                     'submit': 'update',
-                                    'available_in_repository': True
+                                    'available_in_repository': True,
+                                    'other_documentation1': link_documentation,
+                                    'documentation1_title': documentation_title,
+                                    'documentation1_url': documentation_URL,
+                                    'documentation1_pk': doc_pk,
+                                    'documentation1_type': 'Generated'
                                 },
                                 files=files, headers={'Referer':referrer})
                     print 'Update result: %d' % r.status_code
@@ -400,6 +442,7 @@ for ds in ds_list:
                 r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update',
                             data={
                                 'csrfmiddlewaretoken': csrftoken,
+                                'script_operation': True,
                                 'ds_info_copy': False,
                                 'name': ds_name,
                                 'last_update_method': server_ds['last_update_method'],
