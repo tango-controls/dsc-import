@@ -32,7 +32,7 @@ from time import sleep
 import re
 from xmi_from_html import get_xmi_from_html
 
-FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
+FORCE_UPDATE = True  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
@@ -52,9 +52,10 @@ REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 REPO_START_PATH = 'DeviceClasses'
 
 # Tango Controls or test server address
-SERVER_BASE_URL = 'http://www.tango-controls.org/'
+# SERVER_BASE_URL = 'http://www.tango-controls.org/'
 # SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
 # SERVER_BASE_URL = 'http://localhost:8080/'
+SERVER_BASE_URL =  'http://tango-qualif.tango-vm.webu.coop/'
 
 # command used to synchronize local repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
