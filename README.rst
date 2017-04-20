@@ -21,6 +21,7 @@ Requirements
                 if commit_node.find('author') is not None:
                     author = commit_node.find('author').text
 
+- lxml library
 - urllib2 library
 - Requests library version >= 2.12, you may need to run pip with --upgrade option
 
