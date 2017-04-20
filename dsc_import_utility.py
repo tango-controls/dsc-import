@@ -31,18 +31,19 @@ from pytz import utc
 from time import sleep
 import re
 from xmi_from_html import get_xmi_from_html
+import cred
 
 FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
-USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
+USE_DOC_FOR_NON_XMI = False # when True, parse documentation to get xmi conntent for device servers without XMI
 ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
 
 
 # set the following variables to point to the repositories
 
-LOCAL_REPO_PATH = '/home/piotr/tmp/tango-ds-repo/'  # local copy of the repository
-LOG_PATH = '/home/piotr/tmp'  # where to log some information about import process, not used now.
+LOCAL_REPO_PATH = '/home/ubuntu/dsc-import/tango-repo'  # local copy of the repository
+LOG_PATH = '/home/ubuntu/dsc-import/log'  # where to log some information about import process, not used now.
 
 REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
 REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
@@ -81,8 +82,9 @@ FAMILY_FROM_PATH_PARSER = r'DeviceClasses/([A-Za-z]*)/.*'
 
 print "You are going to update a devcie servers catalogue info on the server: %s" % SERVER_BASE_URL
 
-login = raw_input('Login: ')
-password = getpass()
+login = cred.T_USER # raw_input('Login: ')
+password = cred.T_PASS # getpass()
+
 
 client = requests.session()
 client.verify = VERIFY_CERT
