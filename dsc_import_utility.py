@@ -68,13 +68,13 @@ DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc
 
 
 # settings for catalogue configuration on the server
-SERVER_DSC_URL = SERVER_BASE_URL+'resources/dsc/'
+SERVER_DSC_URL = SERVER_BASE_URL+'developers/dsc/'
 
-SERVER_ADD_URL = SERVER_BASE_URL+'resources/dsc/add/'
+SERVER_ADD_URL = SERVER_BASE_URL+'developers/dsc/add/'
 
-SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
+SERVER_LIST_URL = SERVER_BASE_URL+'developers/dsc/list/?repository_url='
 
-SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'
+SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/developers/dsc/'
 
 FAMILY_FROM_PATH_PARSER = r'DeviceClasses/([A-Za-z]*)/.*'
 
