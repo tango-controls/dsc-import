@@ -37,6 +37,7 @@ TEST_SERVER_AUTH = False  # Set true if script is run against test server with a
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
 ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
+FORCE_ONLY_GITHUB = False  # when true only force update of github (to initialy polpulate it with data)
 
 
 # set the following variables to point to the repositories
@@ -386,6 +387,7 @@ for ds in ds_list:
                                     'last_update_method': server_ds['last_update_method'],
                                     'description': '',
                                     'add_class': False,
+                                    'only_github': FORCE_ONLY_GITHUB and not date_parser.parse(server_ds['last_update'])<xmi['element']['date'],
                                     'xmi_file_url':xmi_url,
                                     'use_url_xmi_file': xmi_from_url,
                                     'use_manual_info': False,
