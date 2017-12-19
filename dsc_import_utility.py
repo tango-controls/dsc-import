@@ -376,10 +376,10 @@ for ds in ds_list:
 
                 elif FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
                     print 'Updating with XMI: %s' % xmi['name']
-                    client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update', headers={'Referer':referrer})
-                    referrer = SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update'
+                    client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/', headers={'Referer':referrer})
+                    referrer = SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/'
                     csrftoken = client.cookies['csrftoken']
-                    r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update',
+                    r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/',
                                 data={
                                     'csrfmiddlewaretoken': csrftoken,
                                     'script_operation': True,
@@ -440,10 +440,10 @@ for ds in ds_list:
 
             elif ds_adding or FORCE_UPDATE or date_parser.parse(server_ds['last_update']) < xmi['element']['date']:
                 print 'Updating with XMI: %s' % xmi['name']
-                client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update', headers={'Referer':referrer})
-                referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update'
+                client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/', headers={'Referer':referrer})
+                referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
                 csrftoken = client.cookies['csrftoken']
-                r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update',
+                r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/',
                             data={
                                 'csrfmiddlewaretoken': csrftoken,
                                 'script_operation': True,
