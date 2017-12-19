@@ -1,0 +1,1 @@
+0 3 * * 6 /bin/bash --login -c "cd /home/ubuntu/dsc-import;date >> log/runs.log;python dsc_import_utility.py | tail >> log/runs.log"
