@@ -31,7 +31,7 @@ from pytz import utc
 from time import sleep
 import re
 from xmi_from_html import get_xmi_from_html
-import cred
+# import cred
 
 FORCE_UPDATE = False  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
@@ -83,8 +83,8 @@ FAMILY_FROM_PATH_PARSER = r'DeviceClasses/([A-Za-z]*)/.*'
 
 print "You are going to update a devcie servers catalogue info on the server: %s" % SERVER_BASE_URL
 
-login = cred.T_USER # raw_input('Login: ')
-password = cred.T_PASS # getpass()
+login = raw_input('Login: ')
+password = getpass()
 
 
 client = requests.session()
