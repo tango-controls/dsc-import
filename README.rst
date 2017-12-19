@@ -3,68 +3,84 @@ Tango Device Servers Catalogue import utility
 =============================================
 
 The utility imports information from a subversion repository into the Device Servers Catalogue. The repository should be
-publicly available through http. It does it in the following way:
-
-- Make local copy of the repository to speed up a search for device servers procedure.
-
-- Search the local copy for folders containing .XMI files. It takes into account the standard *branches/tags/trunk*
-  structure. The folders where it findes .xmi files or a proper structure are listed as candidates to be device servers.
-
-- The list then is processed and compared (by repository URL) with content in the Catalogue.
-
-    - If there are changes the catalogue is updated
-
-    - If not the device server is skipped
-
-
+publicly available through http.
 
 Requirements
 ------------
 
 - Python2.7
 - Subversion
-- SVN python library :command "pip install svn"
-
+- SVN python library :command:`pip install svn`
     - The library will not work if any of file in the SVN has no author defined which is the case for tango-ds repository
       on the Sourceforge. To avoid problems one can edit :file:`svn/common.py` around line 358 to have something like
       the following:
 
-.. code-block:: python
+      .. code-block:: python
 
                 author = ''
                 if commit_node.find('author') is not None:
                     author = commit_node.find('author').text
 
+- lxml library
 - urllib2 library
 - Requests library version >= 2.12, you may need to run pip with --upgrade option
 
-Run
----
+How-to import multiple classes
+------------------------------
 
-- Make your local branch to be sure your settings will not be overwritten by someone else.
+#. Clone import utility with git:
+    - :command:`git clone https://github.com/piogor/dsc-import.git`
 
-- Update variables in :file:`dsc_import_utility.py` to reflect your environment:
+#. Get into folder:
+    - :command:`cd dsc-import`
 
-.. code-block:: python
+#. Make your local branch to be sure your settings will not be overwritten by someone else.
+    - :command:`git checkout -b my_local_branch`
 
-    FORCE_UPDATE = False  # when True no timestamp are checked and updates are performed
-    TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
-    VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
+#. Update variables in :file:`dsc_import_utility.py` to reflect your environment:
 
-    # set the following variables to point to the repositories
-    LOCAL_REPO_PATH = '/home/piotr/tmp/tango-ds-repo/'  # local copy of the repository will be synced there
-    LOG_PATH = '/home/piotr/tmp'  # where to log some information about import process, not used now.
+    .. code-block:: python
 
-    REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of the SVN repository
-    REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within the SVN server
+        FORCE_UPDATE = False  # when True no timestamps are checked and updates are performed
+        TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
+        VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
+        USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
+        ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
 
-    # if one would like to limit a search tree (useful for one device server update and/or tests)
-    REPO_START_PATH = 'DeviceClasses'  # do not provide start nor end slashes
+        # set the following variables to point to the repositories
+        LOCAL_REPO_PATH = '/home/piotr/tmp/tango-ds-repo/'  # local copy of the repository will be synced there
+        LOG_PATH = '/home/piotr/tmp'  # where to log some information about import process, not used now.
 
-    # Tango Controls or test server address
-    SERVER_BASE_URL = 'http://www.tango-controls.org/'
+        REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of the SVN repository
+        REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within the SVN server
 
+        # if one would like to limit a search tree (useful for one device server update and/or tests)
+        REPO_START_PATH = 'DeviceClasses'  # do not provide start nor end slashes
 
-- run with a :command:`python dsc_import_utility.py`
+        # Tango Controls or test server address
+        SERVER_BASE_URL = 'http://www.tango-controls.org/'
+
+#. run with a :command:`python dsc_import_utility.py`
 
     - It will ask you for your credentials for tango-controls.org
+
+How the script works
+--------------------
+
+It does import in the following way:
+
+- It makes a local copy  (in path defined by `LOCAL_REPO_PATH`) of a SVN repository to speed up a search
+  for device servers procedure.
+
+- Then it searches the local copy for folders containing .XMI files. It takes into account the
+  standard *branches/tags/trunk* structure. The folders where it findes .xmi files or a proper structure are listed
+  as candidates to be device servers.
+
+- Then, the list of candidates then is processed and compared (by repository URL) with content in
+  the Device Classes Catalogue.
+
+    - If there are changes or `FORCE_UPDATE` is True the catalogue is updated
+        - For device server without .XMI file it looks for documentation server and tries to parse html documentation
+          generated by :program:`Pogo`.
+
+    - If there ara no changes the device server is skipped

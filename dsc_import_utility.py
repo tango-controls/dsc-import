@@ -31,18 +31,20 @@ from pytz import utc
 from time import sleep
 import re
 from xmi_from_html import get_xmi_from_html
+# import cred
 
 FORCE_UPDATE = True  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
-USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
+USE_DOC_FOR_NON_XMI = False # when True, parse documentation to get xmi conntent for device servers without XMI
 ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
+FORCE_ONLY_GITHUB = False  # when true only force update of github (to initialy polpulate it with data)
 
 
 # set the following variables to point to the repositories
 
-LOCAL_REPO_PATH = '/home/piotr/tmp/tango-ds-repo/'  # local copy of the repository
-LOG_PATH = '/home/piotr/tmp'  # where to log some information about import process, not used now.
+LOCAL_REPO_PATH = '/home/ubuntu/dsc-import/tango-repo'  # local copy of the repository
+LOG_PATH = '/home/ubuntu/dsc-import/log'  # where to log some information about import process, not used now.
 
 REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
 REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
@@ -68,13 +70,13 @@ DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc
 
 
 # settings for catalogue configuration on the server
-SERVER_DSC_URL = SERVER_BASE_URL+'resources/dsc/'
+SERVER_DSC_URL = SERVER_BASE_URL+'developers/dsc/'
 
-SERVER_ADD_URL = SERVER_BASE_URL+'resources/dsc/add/'
+SERVER_ADD_URL = SERVER_BASE_URL+'developers/dsc/add/'
 
-SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
+SERVER_LIST_URL = SERVER_BASE_URL+'developers/dsc/list/?repository_url='
 
-SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'
+SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/developers/dsc/'
 
 FAMILY_FROM_PATH_PARSER = r'DeviceClasses/([A-Za-z]*)/.*'
 
@@ -84,6 +86,7 @@ print "You are going to update a devcie servers catalogue info on the server: %s
 
 login = raw_input('Login: ')
 password = getpass()
+
 
 client = requests.session()
 client.verify = VERIFY_CERT
@@ -387,6 +390,7 @@ for ds in ds_list:
                                     'last_update_method': server_ds['last_update_method'],
                                     'description': '',
                                     'add_class': False,
+                                    'only_github': FORCE_ONLY_GITHUB and not date_parser.parse(server_ds['last_update'])<xmi['element']['date'],
                                     'xmi_file_url':xmi_url,
                                     'use_url_xmi_file': xmi_from_url,
                                     'use_manual_info': False,
