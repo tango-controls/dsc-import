@@ -36,22 +36,22 @@ from xmi_from_html import get_xmi_from_html
 FORCE_UPDATE = True  # when True no time stamp are checked and updates are performed
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
-USE_DOC_FOR_NON_XMI = False # when True, parse documentation to get xmi conntent for device servers without XMI
+USE_DOC_FOR_NON_XMI = True # when True, parse documentation to get xmi conntent for device servers without XMI
 ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
-FORCE_ONLY_GITHUB = False  # when true only force update of github (to initialy polpulate it with data)
+FORCE_ONLY_GITHUB = True  # when true only force update of github (to initialy polpulate it with data)
 
 
 # set the following variables to point to the repositories
 
-LOCAL_REPO_PATH = '/home/ubuntu/dsc-import/tango-repo'  # local copy of the repository
-LOG_PATH = '/home/ubuntu/dsc-import/log'  # where to log some information about import process, not used now.
+LOCAL_REPO_PATH = '/home/piotr/dsc-import/tango-repo'  # local copy of the repository
+LOG_PATH = '/home/piotr/dsc-import/log'  # where to log some information about import process, not used now.
 
 REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
 REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
 
 # if one would like to limit searched treee (useful for one device server update and or tests)
 # do not provide start nor end slashes
-REPO_START_PATH = 'DeviceClasses'
+REPO_START_PATH = 'DeviceClasses/Vacuum'
 
 # Tango Controls or test server address
 # SERVER_BASE_URL = 'http://www.tango-controls.org/'
@@ -377,10 +377,10 @@ for ds in ds_list:
 
                 elif FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
                     print 'Updating with XMI: %s' % xmi['name']
-                    client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update', headers={'Referer':referrer})
-                    referrer = SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update'
+                    client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/', headers={'Referer':referrer})
+                    referrer = SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/'
                     csrftoken = client.cookies['csrftoken']
-                    r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update',
+                    r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/',
                                 data={
                                     'csrfmiddlewaretoken': csrftoken,
                                     'script_operation': True,
@@ -441,10 +441,10 @@ for ds in ds_list:
 
             elif ds_adding or FORCE_UPDATE or date_parser.parse(server_ds['last_update']) < xmi['element']['date']:
                 print 'Updating with XMI: %s' % xmi['name']
-                client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update', headers={'Referer':referrer})
-                referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update'
+                client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/', headers={'Referer':referrer})
+                referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
                 csrftoken = client.cookies['csrftoken']
-                r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update',
+                r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/',
                             data={
                                 'csrfmiddlewaretoken': csrftoken,
                                 'script_operation': True,
