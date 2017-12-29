@@ -37,7 +37,7 @@ How-to import multiple classes
 #. Make your local branch to be sure your settings will not be overwritten by someone else.
     - :command:`git checkout -b my_local_branch`
 
-#. Update variables in :file:`dsc_import_utility.py` to reflect your environment:
+#. Update variables in :file:`settings.py` to reflect your environment:
 
     .. code-block:: python
 
