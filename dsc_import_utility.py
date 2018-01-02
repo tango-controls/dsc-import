@@ -106,24 +106,25 @@ xmi_not_changed = 0
 for ds in ds_list:
     print
     print '------------------------------------'
-    print 'Processing %s' % ds['path']
+    print 'Processing %s' % ds.get('path', ds.get('name', ''))
+
     try:
 
-
         # device server name:
-        ds_name = os.path.basename(ds['path'])
+        ds_name = os.path.basename(ds.get('path', ds.get('name', '')))
         if len(ds_name) > 0:
             auto_ds_name = False
-            print 'Device server name from path: %s' % ds_name
+            print 'Device server name: %s' % ds_name
         else:
             auto_ds_name = True
-            print 'Cannot guess name of device server from the path.'
-        # developement status
+            print 'Cannot guess name of device server from the path nor ds name directly provided.'
+
+        # development status
         development_status = 'new'
         if ds.has_key('tag'):
             development_status = 'released'
 
-        family_parsed = re.match(FAMILY_FROM_PATH_PARSER, ds['path'])
+        family_parsed = re.match(FAMILY_FROM_PATH_PARSER, ds.get('path', ''))
         family = None
 
         if family_parsed is not None:
@@ -134,7 +135,8 @@ for ds in ds_list:
         documentation_URL = ''
         documentation_title = ''
         link_documentation = False
-        if ADD_LINK_TO_DOCUMENTATION:
+
+        if ADD_LINK_TO_DOCUMENTATION and ds.get('documentation_url', None) is None:
             if family is not None:
                 documentation_URL = DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/'+ ds_name + '.pdf'
                 documentation_title = 'PDF generated from POGO'
@@ -149,17 +151,24 @@ for ds in ds_list:
             else:
                 print 'Cannot link documentation since a class family has not been properly detected.'
 
+        elif ds.get('documentation_url', None) is not None:
+            # add documentation provided within list
+            documentation_URL = ds.get('documentation_url')
+            documentation_title = ds.get('documentation_title', 'Manual')
+            link_documentation = True
+
         xmi_from_doc = False
         xmi_from_url = True
         xmi_content = ''
         files = {}
 
         # case when there is no .xmi files
+        if len(ds['xmi_files']) == 0:
 
-        if len(ds['xmi_files'])==0:
             print 'No .xmi files found in this path.'
             # can use documentation if device server name can be guessed.
             if USE_DOC_FOR_NON_XMI and not auto_ds_name:
+
                 print 'Trying to use documentation to build an .xmi file.'
                 xmi_from_doc = True
                 xmi_from_url = False
@@ -181,31 +190,33 @@ for ds in ds_list:
                 ds['xmi_files'] = [{
                     'name': ds_name+'.xmi',
                     'path': '',
-                    'element': { 'date': datetime.now(utc) }
-                },]
-
-
+                    'element': {'date': datetime.now(utc) },
+                    'content': xmi_content
+                },
+                ]
             else:
                 print 'Skipping this path.'
                 ds_skipped.append(ds)
                 continue
 
-
         print 'Checking if the device server already exists in the catalogue...'
 
-        r = client.get(SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path'], headers={'Referer':referrer})
-        referrer = SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path']
-        ds_on_server = r.json()
-        # print "The following device servers match repository are in the catalogue: "
-        # print ds_on_server
+        if ds.get('repository_url', None) is not None:
+            r = client.get(SERVER_LIST_URL + ds.get('repository_url'), headers={'Referer': referrer})
+            referrer = SERVER_LIST_URL + ds.get('repository_url')
+        else:
+            r = client.get(SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path'], headers={'Referer':referrer})
+            referrer = SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path']
 
-        if len(ds_on_server)>1:
+        ds_on_server = r.json()
+
+        if len(ds_on_server) > 1:
             print 'There are %d device servers registered with this repository path. ' \
                   'Import utility does not handle such a case. Skipping.  ' % len(ds_on_server)
             ds_skipped.append(ds)
             continue
 
-        if len(ds_on_server)==1:
+        if len(ds_on_server) == 1:
             print 'This device server already exists in the catalogue. It will be updated if necessary.'
             server_ds_pk, server_ds = ds_on_server.popitem()
             ds_adding = False
@@ -226,14 +237,13 @@ for ds in ds_list:
             ds_adding = True
             print 'This is a new device server. It will  be added to the catalogue.'
 
-        ds_repo_url = REMOTE_REPO_URL + '/' + ds['path']
+        ds_repo_url = ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path',''))
 
         repository_tag = ds.get('tag', '')
 
-
-
         # readme file
         upload_readme = False
+
         if len(ds['readme_files'])>0:
             readme_file = ds['readme_files'][0]
             readme_name = readme_file['name']
@@ -275,12 +285,18 @@ for ds in ds_list:
 
         for xmi in ds['xmi_files']:
             print "XMI file: %s" % xmi['name']
-            xmi_url = REMOTE_REPO_URL + '/' + xmi['path'] + '/' + xmi['name']
+
+            xmi_url = xmi.get('xmi_url', REMOTE_REPO_URL + '/' + xmi.get('path','') + '/' + xmi.get('name'))
             # skip
             if str(xmi['name']).strip().lower().endswith('.multi.xmi'):
                 continue
 
+            if xmi.has_key('content'):
+                files['xmi_file'] = (xmi['name'], xmi['content'])
+
+
             if first_xmi:
+
                 if ds_adding:
                     client.get(SERVER_ADD_URL, headers={'Referer':referrer})  # sets the cookie
                     referrer = SERVER_ADD_URL
