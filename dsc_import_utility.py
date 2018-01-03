@@ -92,14 +92,16 @@ print 'Getting a list of device server in the repository...'
 repo = svn.remote.RemoteClient(LOCAL_REPO_URL)
 ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 10)
 
-ds_problems = []
-ds_skipped = []
+
 
 print 'Found %d device servers.' % len(ds_list)
 
+# counters for device servers processed
 xmi_updated = 0
 xmi_added = 0
 xmi_not_changed = 0
+ds_problems = []
+ds_skipped = []
 
 for ds in ds_list:
     print
@@ -130,14 +132,18 @@ for ds in ds_list:
             if family is not None:
                 print "Class family from the path is %s." % family
 
+        # documentation
         documentation_URL = ''
         documentation_title = ''
+        documentation_type = ''
+        documentation_pk = ''
         link_documentation = False
 
         if ADD_LINK_TO_DOCUMENTATION and ds.get('documentation_url', None) is None:
             if family is not None:
                 documentation_URL = DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/' + ds_name + '.pdf'
                 documentation_title = 'PDF generated from POGO'
+                documentation_type = 'Generated'
 
                 doc_check_client = requests.session()
                 r = requests.get(documentation_URL, allow_redirects=False)
@@ -152,7 +158,8 @@ for ds in ds_list:
         elif ds.get('documentation_url', None) is not None:
             # add documentation provided within list
             documentation_URL = ds.get('documentation_url')
-            documentation_title = ds.get('documentation_title', 'Manual')
+            documentation_title = ds.get('documentation_title', 'Pogo')
+            documentation_type = ds.get('documentation_type', 'Generated')
             link_documentation = True
 
         xmi_from_doc = False
@@ -208,7 +215,7 @@ for ds in ds_list:
             referrer = SERVER_LIST_URL + ds.get('repository_url')
         else:
             r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'], headers={'Referer': referrer})
-            referrer = SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path']
+            referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
 
         ds_on_server = r.json()
 
@@ -225,12 +232,12 @@ for ds in ds_list:
             if server_ds['last_update_method'] == 'manual':
                 print 'This device server has been updated manually on the server. It will not be updated via script.'
                 continue
-            doc_pk = ''
+
             if link_documentation:
                 for doc in server_ds['documentation']:
                     if doc['updated_by_script']:
                         if doc['title'] != documentation_title or doc['url'] != documentation_URL:
-                            doc_pk = doc['pk']
+                            documentation_pk = doc['pk']
                             break
                         else:
                             link_documentation = False
@@ -243,7 +250,7 @@ for ds in ds_list:
 
         repository_tag = ds.get('tag', '')
 
-        # readme file
+        # prepare readme file for upload
         upload_readme = False
 
         if len(ds['readme_files']) > 0:
@@ -259,11 +266,10 @@ for ds in ds_list:
             else:
                 if ds_adding or FORCE_UPDATE or \
                         date_parser.parse(server_ds['last_update']) < readme_file['element']['date']:
-                    # print "README date on SVN: %s" % readme_file['element']['date']
-                    # print "README date in the catalogue: %s" % date_parser.parse(server_ds['last_update'])
-                    # get file from the server
-                    readme_url_response = urllib2.urlopen(REMOTE_REPO_URL + '/' + readme_file['path']
-                                                          + '/' + readme_file['name'])
+
+                    readme_url_response = urllib2.urlopen(readme_file.get('readme_url',
+                                                                          REMOTE_REPO_URL + '/' + readme_file['path']
+                                                                          + '/' + readme_file['name']))
                     readme_file_size = int(readme_url_response.info().get('Content-Length', 0))
                     if readme_file_size < 5 or readme_file_size > 2000000:
                         print 'Readme file size %d is out of limits. Skipping.' % readme_file_size
@@ -315,8 +321,8 @@ for ds in ds_list:
                     'other_documentation1': link_documentation,
                     'documentation1_title': documentation_title,
                     'documentation1_url': documentation_URL,
-                    'documentation1_pk': doc_pk,
-                    'documentation1_type': 'Generated'
+                    'documentation1_pk': documentation_pk,
+                    'documentation1_type': documentation_type,
                 })
 
                 if ds_adding:
