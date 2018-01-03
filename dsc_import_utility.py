@@ -34,8 +34,6 @@ from xmi_from_html import get_xmi_from_html
 from settings import *
 # import cred
 
-
-
 # process of importing:
 
 print "You are going to update a devcie servers catalogue info on the server: %s" % SERVER_BASE_URL
@@ -52,7 +50,7 @@ client.headers = {'User-Agent': 'DSC-Importer'}
 # client.cert = CERTS
 
 if not VERIFY_CERT:
-   requests.packages.urllib3.disable_warnings()
+    requests.packages.urllib3.disable_warnings()
 
 if TEST_SERVER_AUTH:
     print 'You are going to connect to test server which requires a basic authentication first.'
@@ -66,10 +64,10 @@ csrftoken = client.cookies['csrftoken']
 print csrftoken
 
 login_data = dict(login=login, password=password, csrfmiddlewaretoken=csrftoken)
-r = client.post(SERVER_LOGIN_URL, data=login_data, headers={'Referer':SERVER_LOGIN_URL})
-referrer=SERVER_LOGIN_URL
+r = client.post(SERVER_LOGIN_URL, data=login_data, headers={'Referer': SERVER_LOGIN_URL})
+referrer = SERVER_LOGIN_URL
 
-if r.status_code!=200:
+if r.status_code != 200:
     print "wrong password or sever connection error."
     print r.headers
     print r.status_code
@@ -92,7 +90,7 @@ print 'Getting a list of device server in the repository...'
 
 
 repo = svn.remote.RemoteClient(LOCAL_REPO_URL)
-ds_list = svn_utils.get_device_servers_list(repo,REPO_START_PATH,10)
+ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 10)
 
 ds_problems = []
 ds_skipped = []
@@ -138,12 +136,12 @@ for ds in ds_list:
 
         if ADD_LINK_TO_DOCUMENTATION and ds.get('documentation_url', None) is None:
             if family is not None:
-                documentation_URL = DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/'+ ds_name + '.pdf'
+                documentation_URL = DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/' + ds_name + '.pdf'
                 documentation_title = 'PDF generated from POGO'
 
                 doc_check_client = requests.session()
                 r = requests.get(documentation_URL, allow_redirects=False)
-                if r.status_code!=200:
+                if r.status_code != 200:
                     print 'It seems this device server is not documented in a standard path.'
                     link_documentation = False
                 else:
@@ -177,20 +175,24 @@ for ds in ds_list:
                     ds_problems.append(ds)
                     continue
 
-                xmi_content = get_xmi_from_html(description_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/ClassDescription.html',
-                                                attributes_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Attributes.html',
-                                                commands_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Commands.html',
-                                                properties_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/Properties.html'
+                xmi_content = get_xmi_from_html(description_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
+                                                                                       + '/ClassDescription.html',
+                                                attributes_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
+                                                                                               + '/Attributes.html',
+                                                commands_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
+                                                                                                   + '/Commands.html',
+                                                properties_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
+                                                                                      + '/Properties.html'
                                                 )
                 print 'XMI from doc size is %d.' % len(xmi_content)
-                files['xmi_file'] = (ds_name+'.xmi',xmi_content)
-                with open(LOG_PATH+'/'+files['xmi_file'][0],'wb') as f:
+                files['xmi_file'] = (ds_name+'.xmi', xmi_content)
+                with open(LOG_PATH + '/' + files['xmi_file'][0], 'wb') as f:
                     f.write(xmi_content)
 
                 ds['xmi_files'] = [{
-                    'name': ds_name+'.xmi',
+                    'name': ds_name + '.xmi',
                     'path': '',
-                    'element': {'date': datetime.now(utc) },
+                    'element': {'date': datetime.now(utc)},
                     'content': xmi_content
                 },
                 ]
@@ -205,7 +207,7 @@ for ds in ds_list:
             r = client.get(SERVER_LIST_URL + ds.get('repository_url'), headers={'Referer': referrer})
             referrer = SERVER_LIST_URL + ds.get('repository_url')
         else:
-            r = client.get(SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path'], headers={'Referer':referrer})
+            r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'], headers={'Referer': referrer})
             referrer = SERVER_LIST_URL+REMOTE_REPO_URL+'/'+ds['path']
 
         ds_on_server = r.json()
@@ -227,7 +229,7 @@ for ds in ds_list:
             if link_documentation:
                 for doc in server_ds['documentation']:
                     if doc['updated_by_script']:
-                        if doc['title']!=documentation_title or doc['url']!=documentation_URL:
+                        if doc['title'] != documentation_title or doc['url'] != documentation_URL:
                             doc_pk = doc['pk']
                             break
                         else:
@@ -237,103 +239,114 @@ for ds in ds_list:
             ds_adding = True
             print 'This is a new device server. It will  be added to the catalogue.'
 
-        ds_repo_url = ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path',''))
+        ds_repo_url = ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', ''))
 
         repository_tag = ds.get('tag', '')
 
         # readme file
         upload_readme = False
 
-        if len(ds['readme_files'])>0:
+        if len(ds['readme_files']) > 0:
             readme_file = ds['readme_files'][0]
             readme_name = readme_file['name']
             print 'There is a readme file: %s' % readme_name
-            if os.path.splitext(readme_name)[1] not in ['.txt', '.TXT',
-                                                         '.md', '.MD',
-                                                         '', '.doc', '.DOC',
-                                                         '.rst', '.RST',
-                                                         '.pdf', '.PDF',
-                                                         '.html', '.HTML', '.htm', '.HTM']:
-                print 'I will skip file of unknown extension.'
+            if os.path.splitext(readme_name)[1] not in ['.txt', '.TXT', '.md', '.MD',
+                                                        '', '.doc', '.DOC',
+                                                        '.rst', '.RST',
+                                                        '.pdf', '.PDF',
+                                                        '.html', '.HTML', '.htm', '.HTM']:
+                print 'File with unknown extension skipped.'
             else:
                 if ds_adding or FORCE_UPDATE or \
                         date_parser.parse(server_ds['last_update']) < readme_file['element']['date']:
                     # print "README date on SVN: %s" % readme_file['element']['date']
                     # print "README date in the catalogue: %s" % date_parser.parse(server_ds['last_update'])
                     # get file from the server
-                    readme_url_response = urllib2.urlopen(REMOTE_REPO_URL + '/' + readme_file['path'] + \
-                                                          '/' + readme_file['name'])
-                    readme_file_size = int(readme_url_response.info().get('Content-Length',0))
+                    readme_url_response = urllib2.urlopen(REMOTE_REPO_URL + '/' + readme_file['path']
+                                                          + '/' + readme_file['name'])
+                    readme_file_size = int(readme_url_response.info().get('Content-Length', 0))
                     if readme_file_size < 5 or readme_file_size > 2000000:
                         print 'Readme file size %d is out of limits. Skipping.' % readme_file_size
                     else:
                         print 'It will be uploaded.'
-                        read_file_content=readme_url_response.read()
+                        read_file_content = readme_url_response.read()
                         files['readme_file'] = (readme_name, read_file_content)
                         upload_readme = 1
                 else:
                     print 'Will skip the readme upload since it is elder than the last update of device server.'
 
-        # .XMIs
-        first_xmi=True
-
-        # print 'Files to be uploaded:'
-        # print files
-
-        # print 'XMI files: '
-        # print ds['xmi_files']
+        # Iterate through .XMIs and update catalogue
+        first_xmi = True
 
         for xmi in ds['xmi_files']:
             print "XMI file: %s" % xmi['name']
 
-            xmi_url = xmi.get('xmi_url', REMOTE_REPO_URL + '/' + xmi.get('path','') + '/' + xmi.get('name'))
+            xmi_url = xmi.get('xmi_url', REMOTE_REPO_URL + '/' + xmi.get('path', '') + '/' + xmi.get('name'))
             # skip
             if str(xmi['name']).strip().lower().endswith('.multi.xmi'):
                 continue
 
             if xmi.has_key('content'):
                 files['xmi_file'] = (xmi['name'], xmi['content'])
+                xmi_from_url = False
 
+            # prepare common data to be sent
+            data_to_send = {
+                    'script_operation': True,
+                    'ds_info_copy': auto_ds_name,
+                    'development_status': development_status,
+                    'name': ds_name,
+                    'description': '',
+                    'xmi_file_url': xmi_url,
+                    'use_url_xmi_file': xmi_from_url,
+                    'use_manual_info': False,
+                    'use_uploaded_xmi_file': xmi_from_doc,
+                    'available_in_repository': True,
+                    'repository_url': ds_repo_url,
+                    'repository_type': ds.get('repository_type', 'SVN'),
+                    'repository_tag': repository_tag,
+                    'upload_readme': False,
+            }
 
             if first_xmi:
+                # documentation is updated only with the first xmi file
+                data_to_send.update({
+                    'upload_readme': upload_readme,
+                    'other_documentation1': link_documentation,
+                    'documentation1_title': documentation_title,
+                    'documentation1_url': documentation_URL,
+                    'documentation1_pk': doc_pk,
+                    'documentation1_type': 'Generated'
+                })
 
                 if ds_adding:
-                    client.get(SERVER_ADD_URL, headers={'Referer':referrer})  # sets the cookie
+                    # case when device server does not yet exists on the server
+                    # connect to the adding form
+                    client.get(SERVER_ADD_URL, headers={'Referer': referrer})  # sets the cookie
                     referrer = SERVER_ADD_URL
                     csrftoken = client.cookies['csrftoken']
-                    r = client.post(SERVER_ADD_URL,
-                                data={
-                                    'csrfmiddlewaretoken': csrftoken,
-                                    'script_operation': True,
-                                    'ds_info_copy': auto_ds_name,
-                                    'development_status': development_status,
-                                    'name': ds_name,
-                                    'description': '',
-                                    'xmi_file_url':xmi_url,
-                                    'use_url_xmi_file': xmi_from_url,
-                                    'use_manual_info': False,
-                                    'use_uploaded_xmi_file': xmi_from_doc,
-                                    'repository_url': ds_repo_url,
-                                    'repository_type': 'SVN',
-                                    'repository_tag': repository_tag,
-                                    'upload_readme': upload_readme,
-                                    'submit': 'create',
-                                    'available_in_repository': True,
-                                    'other_documentation1': link_documentation,
-                                    'documentation1_title': documentation_title,
-                                    'documentation1_url': documentation_URL,
-                                    'documentation1_pk': doc_pk,
-                                    'documentation1_type': 'Generated'
-                                },
-                                files=files,  headers={'Referer':referrer})
 
-                    print 'Adding result: %d' % r.status_code
+                    # update data to be send to the form accordingly
+                    data_to_send.update({
+                        'csrfmiddlewaretoken': csrftoken,
+                        'submit': 'create',
+                    })
+
+                    # send data to the server
+                    r = client.post(SERVER_ADD_URL, data=data_to_send,
+                                    files=files,  headers={'Referer': referrer})
+
+                    print 'Adding HTTP result code: %d' % r.status_code
                     add_result = r
 
+                    # check if the catalogue is realy updated
                     sleep(1)
-                    r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],  headers={'Referer':referrer})
+                    # list device servers in the repository
+                    r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],  headers={'Referer': referrer})
                     referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
                     ds_on_server = r.json()
+
+                    # if there is exactly one device server it seems the adding was successful
                     if len(ds_on_server) == 1:
                         server_ds_pk, server_ds = ds_on_server.popitem()
                         first_xmi = False
@@ -347,48 +360,41 @@ for ds in ds_list:
                         f.close()
                         break
 
-                elif FORCE_UPDATE or date_parser.parse(server_ds['last_update'])<xmi['element']['date']:
+                elif FORCE_UPDATE or date_parser.parse(server_ds['last_update']) < xmi['element']['date']:
+                    # case when the device server already exists
                     print 'Updating with XMI: %s' % xmi['name']
-                    client.get(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/', headers={'Referer':referrer})
-                    referrer = SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/'
+
+                    # connect to update form
+                    client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/', headers={'Referer': referrer})
+                    referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
                     csrftoken = client.cookies['csrftoken']
-                    r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/',
-                                data={
-                                    'csrfmiddlewaretoken': csrftoken,
-                                    'script_operation': True,
-                                    'ds_info_copy': auto_ds_name,
-                                    'development_status': development_status,
-                                    'name': ds_name,
-                                    'last_update_method': server_ds['last_update_method'],
-                                    'description': '',
-                                    'add_class': False,
-                                    'only_github': FORCE_ONLY_GITHUB and not date_parser.parse(server_ds['last_update'])<xmi['element']['date'],
-                                    'xmi_file_url':xmi_url,
-                                    'use_url_xmi_file': xmi_from_url,
-                                    'use_manual_info': False,
-                                    'use_uploaded_xmi_file': xmi_from_doc,
-                                    'repository_url': ds_repo_url,
-                                    'repository_type': 'SVN',
-                                    'repository_tag': repository_tag,
-                                    'upload_readme': upload_readme,
-                                    'submit': 'update',
-                                    'available_in_repository': True,
-                                    'other_documentation1': link_documentation,
-                                    'documentation1_title': documentation_title,
-                                    'documentation1_url': documentation_URL,
-                                    'documentation1_pk': doc_pk,
-                                    'documentation1_type': 'Generated'
-                                },
-                                files=files, headers={'Referer':referrer})
-                    print 'Update result: %d' % r.status_code
+
+                    # update data to be sent via form
+                    data_to_send.update({
+                        'csrfmiddlewaretoken': csrftoken,
+                        'last_update_method': server_ds['last_update_method'],
+                        'description': '',
+                        'add_class': False,
+                        'only_github': FORCE_ONLY_GITHUB
+                                       and not date_parser.parse(server_ds['last_update']) < xmi['element']['date'],
+                        'submit': 'update',
+                    })
+
+                    # send update form
+                    r = client.post(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                                    data=data_to_send,
+                                    files=files, headers={'Referer': referrer})
+
+                    print 'Update HTTP result: %d' % r.status_code
                     update_result = r
 
+                    # check if the update successfully updated database
                     r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'], headers={'Referer': referrer})
                     referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
                     ds_on_server = r.json()
                     if len(ds_on_server) == 1:
                         u_server_ds_pk, u_server_ds = ds_on_server.popitem()
-                        if date_parser.parse(server_ds['last_update'])<date_parser.parse(u_server_ds['last_update']):
+                        if date_parser.parse(server_ds['last_update']) < date_parser.parse(u_server_ds['last_update']):
                             server_ds = u_server_ds
                             print '.XMI has been successfully updated in the catalogue.'
                             first_xmi = False
@@ -412,31 +418,26 @@ for ds in ds_list:
                     print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi['name']
 
             elif ds_adding or FORCE_UPDATE or date_parser.parse(server_ds['last_update']) < xmi['element']['date']:
+                # case of updating subsequent .XMIs for multiple class device servers
                 print 'Updating with XMI: %s' % xmi['name']
-                client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/', headers={'Referer':referrer})
+
+                # load update form
+                client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/', headers={'Referer': referrer})
                 referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
                 csrftoken = client.cookies['csrftoken']
+
+                # updated data to be sent to the form
+                data_to_send.update({
+                    'csrfmiddlewaretoken': csrftoken,
+                    'ds_info_copy': False,
+                    'last_update_method': server_ds['last_update_method'],
+                    'add_class': True,
+                    'upload_readme': False,
+                    'submit': 'update',
+                })
+
                 r = client.post(SERVER_DSC_URL+'ds/'+str(server_ds_pk)+'/update/',
-                            data={
-                                'csrfmiddlewaretoken': csrftoken,
-                                'script_operation': True,
-                                'ds_info_copy': False,
-                                'name': ds_name,
-                                'last_update_method': server_ds['last_update_method'],
-                                'development_status': development_status,
-                                'description': '',
-                                'add_class': True,
-                                'xmi_file_url':xmi_url,
-                                'use_url_xmi_file': xmi_from_url,
-                                'use_manual_info': False,
-                                'use_uploaded_xmi_file': xmi_from_doc,
-                                'repository_url': ds_repo_url,
-                                'repository_type': 'SVN',
-                                'repository_tag': repository_tag,
-                                'upload_readme': False,
-                                'submit': 'update',
-                                'available_in_repository': True
-                            }, headers={'Referer':referrer})
+                                data=data_to_send, headers={'Referer': referrer})
                 print 'Update result: %d' % r.status_code
                 xmi_updated += 1
                 sleep(1)
@@ -444,25 +445,16 @@ for ds in ds_list:
                 xmi_not_changed += 1
                 print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi['name']
 
-
-
-
     except Exception as e:
         print e.message
         ds_problems.append(ds)
 
+print ''
 print '\nImport summary:'
 print '---------------------------'
 print 'Skippend %d device servers (no xmi files).' % len(ds_skipped)
 print 'Problems with %d device servers (errors in processing).' % len(ds_problems)
-
-print 'Count of updated or added XMI files: %d' % (xmi_added+xmi_updated)
-print 'Count of untouched (not changed) xmi files: %d ' % (xmi_not_changed)
-
-
-
-
-
-
-
-
+print 'Count of updated or added XMI files: %d' % (xmi_added + xmi_updated)
+print 'Count of untouched (not changed) xmi files: %d ' % xmi_not_changed
+print '---------------------------'
+print ''
