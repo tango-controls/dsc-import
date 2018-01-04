@@ -5,6 +5,13 @@ USE_DOC_FOR_NON_XMI = False # when True, parse documentation to get xmi conntent
 ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
 FORCE_ONLY_GITHUB = False  # when true only force update of github (to initialy polpulate it with data)
 
+# if credentials below are None the script will ask for it with termina
+USER_LOGIN = None
+USER_PASSWORD = None
+# one can provide cred.py locally to run script automatically (please not add it to git)
+# import cred
+# USER_LOGIN = cred.T_USER
+# USER_PASSWORD = cred.T_PASSWORD
 
 # set the following variables to point to the repositories
 
