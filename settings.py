@@ -61,5 +61,3 @@ SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/developers/dsc/'
 # SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
 
 # SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'
-
-
