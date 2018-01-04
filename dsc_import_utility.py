@@ -36,7 +36,7 @@ else:
     login = USER_LOGIN
     password = USER_PASSWORD
 
-DscServerUtils.login_to_server(login, password)
+DscServerUtils.login_to_catalogue(login, password)
 
 
 # getting list of device server from a SVN repository
