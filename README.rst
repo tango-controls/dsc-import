@@ -98,7 +98,8 @@ How-to import multiple classes
 
 #. run with a :command:`python dsc_import_utility.py`
 
-    - It will ask you for your credentials for tango-controls.org
+    - Depending of :file:`settings.py it will ask you for your credentials for tango-controls.org
+    - Use `--csv-file` command line argument to use a .csv file instead of an SVN repository
 
 How the script works
 --------------------

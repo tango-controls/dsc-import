@@ -16,17 +16,28 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 """
 
-import svn_utils
-import svn.remote
+
 import os
 from getpass import getpass
-from settings import *
+import svn.remote
 from server_utils import DscServerUtils
+import argparse
+import svn_utils
+import csv_utils
 
-# process of importing:
+from settings import *
+
+# get command line arguments
+arguments = argparse.ArgumentParser(description="This script batch imports device servers/classes to Tango Controls "
+                                                "Device Classes Catalogue.",
+                                    epilog="Please configure the script in settings.py to make it comply with your "
+                                           "environment.")
+arguments.add_argument("--csv-file", dest='csv_file', help="If provided the script will parse the CSV_FILE instead "
+                                                           "of an SVN repository defined in settings.py.", )
+
+args = arguments.parse_args()
 
 print "You are going to update a device servers catalogue info on the server: %s" % SERVER_BASE_URL
-
 
 # login to server
 if USER_LOGIN is None or USER_PASSWORD is None:
@@ -39,22 +50,35 @@ else:
 DscServerUtils.login_to_catalogue(login, password)
 
 
-# getting list of device server from a SVN repository
-if REPO_SYNC_COMMAND != '':
-    print 'Synchronizing local repository...'
-    print 'Using a commnad: %s' % REPO_SYNC_COMMAND
-    os.system(REPO_SYNC_COMMAND)
-    print '...local repository synchronized.'
-    print '-------------------------------'
+# get list of device servers to be processed
+ds_list = []
+
+if arguments.csv_file is None:
+    # by default list of device servers is got from an SVN repository
+    print
+    print "Using SVN as source of device servers list."
+    print
+    if REPO_SYNC_COMMAND != '':
+        print 'Synchronizing local repository...'
+        print 'Using a commnad: %s' % REPO_SYNC_COMMAND
+        os.system(REPO_SYNC_COMMAND)
+        print '...local repository synchronized.'
+        print '-------------------------------'
+    else:
+        print 'Local repository will not be synchronized.'
+
+    print 'Getting a list of device server in the repository...'
+    repo = svn.remote.RemoteClient(LOCAL_REPO_URL)
+    ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 10)
+
 else:
-    print 'Local repository will not be synchronized.'
-
-print 'Getting a list of device server in the repository...'
-
-
-repo = svn.remote.RemoteClient(LOCAL_REPO_URL)
-ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 10)
+    # if SV file provided the list is built according to it
+    print
+    print "Using %s file to build a list of device servers." % args.csv_file
+    print
+    ds_list = csv_utils.get_device_servers_list(args.csv_file)
 
 print 'Found %d device servers.' % len(ds_list)
 
+# update the catalogue
 DscServerUtils.update_catalogue(ds_list)
