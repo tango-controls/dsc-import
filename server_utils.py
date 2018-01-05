@@ -176,15 +176,17 @@ class DscServerUtils:
                             ds_problems.append(ds)
                             continue
 
-                        xmi_content = get_xmi_from_html(description_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
-                                                                        + '/ClassDescription.html',
-                                                        attributes_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
-                                                                       + '/Attributes.html',
-                                                        commands_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
-                                                                     + '/Commands.html',
-                                                        properties_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
-                                                                       + '/Properties.html'
-                                                        )
+                        xmi_content = get_xmi_from_html(
+                            description_url=ds.get('pogo_docs_url_base',
+                                                   DOCUMENTATION_BASE_URL
+                                                   + family + '/' + ds_name) + '/ClassDescription.html',
+                            attributes_url=ds.get('pogo_docs_url_base',
+                                                  DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Attributes.html',
+                            commands_url=ds.get('pogo_docs_url_base',
+                                                DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Commands.html',
+                            properties_url=ds.get('pogo_docs_url_base',
+                                                  DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Properties.html'
+                        )
                         print 'XMI from doc size is %d.' % len(xmi_content)
                         files['xmi_file'] = (ds_name + '.xmi', xmi_content)
                         with open(LOG_PATH + '/' + files['xmi_file'][0], 'wb') as f:

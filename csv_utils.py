@@ -37,6 +37,8 @@ def get_device_servers_list(csv_file_path):
         "repository_type" - provides type of repository
         "tag" - release tag
         "xmi_files_urls" - provides url (http://, https:// or file://) to an xmi file.
+        "pogo_docs_url_base" - provides base url for pogo generated docs that may be parsed to get xmi file for non-xmi
+                               devcice server
         "upload_xmi_file" - If False or empty, the upload form will be provided with the url and the catalogue will
                             download the file. If True, the file will be downloaded by the script, then uploaded
                             to the catalogue form
@@ -112,6 +114,10 @@ def get_device_servers_list(csv_file_path):
                     index += 1
 
                 ds['xmi_files'] = xmi_files
+
+                # for device servers featuring pogo documentation but no .xmi:
+                if len(row.get("pogo_docs_url_base", '')) > 0:
+                    ds['pogo_docs_url_base'] = row.get("pogo_docs_url_base")
 
                 # process readme related columns
                 ds['readme_files'] = []
