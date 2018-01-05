@@ -51,12 +51,12 @@ class DscServerUtils:
 
     def login_to_catalogue(self, login, password):
 
-        client = requests.session()
-        client.verify = VERIFY_CERT
-        client.max_redirects = 5
-        client.headers = {'User-Agent': 'DSC-Importer'}
+        self.client = requests.session()
+        self.client.verify = VERIFY_CERT
+        self.client.max_redirects = 5
+        self.client.headers = {'User-Agent': 'DSC-Importer'}
 
-        # client.cert = CERTS
+        # self.client.cert = CERTS
 
         if not VERIFY_CERT:
             requests.packages.urllib3.disable_warnings()
@@ -65,16 +65,16 @@ class DscServerUtils:
             print 'You are going to connect to test server which requires a basic authentication first.'
             ba_login = raw_input('Basic auth login: ')
             ba_password = getpass('Basic auth password: ')
-            client.auth = requests.auth.HTTPBasicAuth(ba_login, ba_password)
+            self.client.auth = requests.auth.HTTPBasicAuth(ba_login, ba_password)
 
-        client.get(SERVER_LOGIN_URL)
+        self.client.get(SERVER_LOGIN_URL)
 
-        csrftoken = client.cookies['csrftoken']
-        print csrftoken
+        self.csrftoken = self.client.cookies['csrftoken']
+        print self.csrftoken
 
-        login_data = dict(login=login, password=password, csrfmiddlewaretoken=csrftoken)
-        r = client.post(SERVER_LOGIN_URL, data=login_data, headers={'Referer': SERVER_LOGIN_URL})
-        referrer = SERVER_LOGIN_URL
+        login_data = dict(login=login, password=password, csrfmiddlewaretoken=self.csrftoken)
+        r = self.client.post(SERVER_LOGIN_URL, data=login_data, headers={'Referer': SERVER_LOGIN_URL})
+        self.referrer = SERVER_LOGIN_URL
 
         if r.status_code != 200:
             print "wrong password or sever connection error."
@@ -205,11 +205,11 @@ class DscServerUtils:
                 print 'Checking if the device server already exists in the catalogue...'
 
                 if ds.get('repository_url', None) is not None:
-                    r = client.get(SERVER_LIST_URL + ds.get('repository_url'), headers={'Referer': referrer})
-                    referrer = SERVER_LIST_URL + ds.get('repository_url')
+                    r = self.client.get(SERVER_LIST_URL + ds.get('repository_url'), headers={'Referer': self.referrer})
+                    self.referrer = SERVER_LIST_URL + ds.get('repository_url')
                 else:
-                    r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'], headers={'Referer': referrer})
-                    referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
+                    r = self.client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'], headers={'Referer': self.referrer})
+                    self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
 
                 ds_on_server = r.json()
 
@@ -289,7 +289,7 @@ class DscServerUtils:
                 for xmi in ds['xmi_files']:
                     print "XMI file: %s" % xmi['name']
 
-                    xmi_url = xmi.get('xmi_url', REMOTE_REPO_URL + '/' + xmi.get('path', '') + '/' + xmi.get(xmi))
+                    xmi_url = xmi.get('xmi_url', REMOTE_REPO_URL + '/' + xmi.get('path', '') + '/' + xmi.get('name'))
                     # skip
                     if str(xmi['name']).strip().lower().endswith('.multi.xmi'):
                         continue
@@ -330,19 +330,19 @@ class DscServerUtils:
                         if ds_adding:
                             # case when device server does not yet exists on the server
                             # connect to the adding form
-                            client.get(SERVER_ADD_URL, headers={'Referer': referrer})  # sets the cookie
-                            referrer = SERVER_ADD_URL
-                            csrftoken = client.cookies['csrftoken']
+                            self.client.get(SERVER_ADD_URL, headers={'Referer': self.referrer})  # sets the cookie
+                            self.referrer = SERVER_ADD_URL
+                            self.csrftoken = self.client.cookies['csrftoken']
 
                             # update data to be send to the form accordingly
                             data_to_send.update({
-                                'csrfmiddlewaretoken': csrftoken,
+                                'csrfmiddlewaretoken': self.csrftoken,
                                 'submit': 'create',
                             })
 
                             # send data to the server
-                            r = client.post(SERVER_ADD_URL, data=data_to_send,
-                                            files=files, headers={'Referer': referrer})
+                            r = self.client.post(SERVER_ADD_URL, data=data_to_send,
+                                            files=files, headers={'Referer': self.referrer})
 
                             print 'Adding HTTP result code: %d' % r.status_code
                             add_result = r
@@ -350,9 +350,9 @@ class DscServerUtils:
                             # check if the catalogue is realy updated
                             sleep(1)
                             # list device servers in the repository
-                            r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
-                                           headers={'Referer': referrer})
-                            referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
+                            r = self.client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
+                                           headers={'Referer': self.referrer})
+                            self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
                             ds_on_server = r.json()
 
                             # if there is exactly one device server it seems the adding was successful
@@ -374,14 +374,14 @@ class DscServerUtils:
                             print 'Updating with XMI: %s' % xmi['name']
 
                             # connect to update form
-                            client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                                       headers={'Referer': referrer})
-                            referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
-                            csrftoken = client.cookies['csrftoken']
+                            self.client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                                       headers={'Referer': self.referrer})
+                            self.referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
+                            self.csrftoken = self.client.cookies['csrftoken']
 
                             # update data to be sent via form
                             data_to_send.update({
-                                'csrfmiddlewaretoken': csrftoken,
+                                'csrfmiddlewaretoken': self.csrftoken,
                                 'last_update_method': server_ds['last_update_method'],
                                 'description': '',
                                 'add_class': False,
@@ -392,17 +392,17 @@ class DscServerUtils:
                             })
 
                             # send update form
-                            r = client.post(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                            r = self.client.post(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
                                             data=data_to_send,
-                                            files=files, headers={'Referer': referrer})
+                                            files=files, headers={'Referer': self.referrer})
 
                             print 'Update HTTP result: %d' % r.status_code
                             update_result = r
 
                             # check if the update successfully updated database
-                            r = client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
-                                           headers={'Referer': referrer})
-                            referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
+                            r = self.client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
+                                           headers={'Referer': self.referrer})
+                            self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
                             ds_on_server = r.json()
                             if len(ds_on_server) == 1:
                                 u_server_ds_pk, u_server_ds = ds_on_server.popitem()
@@ -436,14 +436,14 @@ class DscServerUtils:
                         print 'Updating with XMI: %s' % xmi['name']
 
                         # load update form
-                        client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                                   headers={'Referer': referrer})
-                        referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
-                        csrftoken = client.cookies['csrftoken']
+                        self.client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                                   headers={'Referer': self.referrer})
+                        self.referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
+                        self.csrftoken = self.client.cookies['csrftoken']
 
                         # updated data to be sent to the form
                         data_to_send.update({
-                            'csrfmiddlewaretoken': csrftoken,
+                            'csrfmiddlewaretoken': self.csrftoken,
                             'ds_info_copy': False,
                             'last_update_method': server_ds['last_update_method'],
                             'add_class': True,
@@ -451,8 +451,8 @@ class DscServerUtils:
                             'submit': 'update',
                         })
 
-                        r = client.post(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                                        data=data_to_send, headers={'Referer': referrer})
+                        r = self.client.post(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                                        data=data_to_send, headers={'Referer': self.referrer})
                         print 'Update result: %d' % r.status_code
                         xmi_updated += 1
                         sleep(1)
@@ -461,7 +461,7 @@ class DscServerUtils:
                         print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi[
                             'name']
 
-            except Exception as e:
+            except ZeroDivisionError as e:
                 print e.message
                 ds_problems.append(ds)
 

@@ -32,7 +32,7 @@ arguments = argparse.ArgumentParser(description="This script batch imports devic
                                                 "Device Classes Catalogue.",
                                     epilog="Please configure the script in settings.py to make it comply with your "
                                            "environment.")
-arguments.add_argument("--csv-file", dest='csv_file', help="If provided the script will parse the CSV_FILE instead "
+arguments.add_argument("--csv-file", dest='csv_file', default=None, help="If provided the script will parse the CSV_FILE instead "
                                                            "of an SVN repository defined in settings.py.", )
 
 args = arguments.parse_args()
@@ -55,7 +55,7 @@ dsc_sever.login_to_catalogue(login, password)
 # get list of device servers to be processed
 ds_list = []
 
-if arguments.csv_file is None:
+if args.csv_file is None:
     # by default list of device servers is got from an SVN repository
     print
     print "Using SVN as source of device servers list."
