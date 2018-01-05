@@ -49,7 +49,7 @@ class DscServerUtils:
     def __init__(self):
         pass
 
-    def login_to_server(self, login, password):
+    def login_to_catalogue(self, login, password):
 
         client = requests.session()
         client.verify = VERIFY_CERT
