@@ -10,7 +10,7 @@ VERIFY_CERT = False  # set this to false if running aginst test server without a
 # USER_LOGIN = None
 # USER_PASSWORD = None
 # one can provide cred.py locally to run script automatically (please not add it to git)
-# import cred
+import cred
 USER_LOGIN = cred.T_USER
 USER_PASSWORD = cred.T_PASS
 
