@@ -281,7 +281,10 @@ class DscServerUtils:
 
                 # check if any of the xmi needs update
                 xmi_need_update = False
-                for xmi in ds['xmi_files']:
+                for xmi in ds['xmi_files'][:]:
+                    if str(xmi['name']).strip().lower().endswith('.multi.xmi'):
+                        ds['xmi_files'].remove(xmi)
+                        continue
                     if not ds_adding and date_parser.parse(server_ds['last_update']) < xmi['element']['date']:
                         xmi_need_update = True
                         break
@@ -471,7 +474,7 @@ class DscServerUtils:
                         print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi[
                             'name']
 
-            except ZeroDivisionError as e:
+            except Exception as e:
                 print e.message
                 ds_problems.append(ds)
 
