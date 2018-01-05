@@ -47,7 +47,9 @@ else:
     login = USER_LOGIN
     password = USER_PASSWORD
 
-DscServerUtils.login_to_catalogue(login, password)
+dsc_sever = DscServerUtils()
+
+dsc_sever.login_to_catalogue(login, password)
 
 
 # get list of device servers to be processed
@@ -81,4 +83,4 @@ else:
 print 'Found %d device servers.' % len(ds_list)
 
 # update the catalogue
-DscServerUtils.update_catalogue(ds_list)
+dsc_sever.update_catalogue(ds_list)
