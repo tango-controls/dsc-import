@@ -286,6 +286,16 @@ class DscServerUtils:
                         xmi_need_update = True
                         break
 
+                if not ds_adding and len(ds['xmi_files']) != len(server_ds['class_names']):
+                    if not xmi_need_update:
+                        print 'Updating due to non consistent number of xmi files - probably bad import.'
+                    xmi_need_update = True
+
+                if not ds_adding and ds.get('tag', '') != server_ds.get('tag', ''):
+                    if not xmi_need_update:
+                        print 'Updating due to a release tag change.'
+                    xmi_need_update = True
+
                 for xmi in ds['xmi_files']:
                     print "XMI file: %s" % xmi['name']
 
