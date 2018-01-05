@@ -171,21 +171,25 @@ class DscServerUtils:
                         print 'Trying to use documentation to build an .xmi file.'
                         xmi_from_doc = True
                         xmi_from_url = False
-                        if family is None:
+                        if len(ds.get('pogo_docs_url_base', '')) == 0 and family is None:
                             print 'Cannot parse the path for a family!'
                             ds_problems.append(ds)
                             continue
-
+                        print ds.get('pogo_docs_url_base')
                         xmi_content = get_xmi_from_html(
-                            description_url=ds.get('pogo_docs_url_base',
+                            description_url=urllib2.urlopen(ds.get('pogo_docs_url_base',
                                                    DOCUMENTATION_BASE_URL
-                                                   + family + '/' + ds_name) + '/ClassDescription.html',
-                            attributes_url=ds.get('pogo_docs_url_base',
-                                                  DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Attributes.html',
-                            commands_url=ds.get('pogo_docs_url_base',
-                                                DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Commands.html',
-                            properties_url=ds.get('pogo_docs_url_base',
-                                                  DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Properties.html'
+                                                   + str(family) + '/' + ds_name)
+                            + '/' + ds.get('pogo_description_html', 'ClassDescription.html')),
+                            attributes_url=urllib2.urlopen(ds.get('pogo_docs_url_base',
+                                                  DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name)
+                            + '/' + ds.get('pogo_attributes_html','Attributes.html')),
+                            commands_url=urllib2.urlopen(ds.get('pogo_docs_url_base',
+                                                DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name)
+                            + '/' + ds.get('pogo_commands_html', 'Commands.html')),
+                            properties_url=urllib2.urlopen(ds.get('pogo_docs_url_base',
+                                                  DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name)
+                            + '/' + ds.get('pogo_properties_html', 'Properties.html'))
                         )
                         print 'XMI from doc size is %d.' % len(xmi_content)
                         files['xmi_file'] = (ds_name + '.xmi', xmi_content)
@@ -365,9 +369,11 @@ class DscServerUtils:
                             # check if the catalogue is realy updated
                             sleep(1)
                             # list device servers in the repository
-                            r = self.client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
+                            r = self.client.get(SERVER_LIST_URL +
+                                                ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', '')),
                                            headers={'Referer': self.referrer})
-                            self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
+                            self.referrer = SERVER_LIST_URL + \
+                                            ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', ''))
                             ds_on_server = r.json()
 
                             # if there is exactly one device server it seems the adding was successful
@@ -415,9 +421,11 @@ class DscServerUtils:
                             update_result = r
 
                             # check if the update successfully updated database
-                            r = self.client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
+                            r = self.client.get(SERVER_LIST_URL +
+                                                ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', '')),
                                            headers={'Referer': self.referrer})
-                            self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
+                            self.referrer = SERVER_LIST_URL + \
+                                            ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', ''))
                             ds_on_server = r.json()
                             if len(ds_on_server) == 1:
                                 u_server_ds_pk, u_server_ds = ds_on_server.popitem()
@@ -476,7 +484,7 @@ class DscServerUtils:
                         print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi[
                             'name']
 
-            except Exception as e:
+            except NotImplementedError as e:
                 print e.message
                 ds_problems.append(ds)
 
