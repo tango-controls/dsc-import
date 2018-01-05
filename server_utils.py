@@ -176,15 +176,17 @@ class DscServerUtils:
                             ds_problems.append(ds)
                             continue
 
-                        xmi_content = get_xmi_from_html(description_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
-                                                                        + '/ClassDescription.html',
-                                                        attributes_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
-                                                                       + '/Attributes.html',
-                                                        commands_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
-                                                                     + '/Commands.html',
-                                                        properties_url=DOCUMENTATION_BASE_URL + family + '/' + ds_name
-                                                                       + '/Properties.html'
-                                                        )
+                        xmi_content = get_xmi_from_html(
+                            description_url=ds.get('pogo_docs_url_base',
+                                                   DOCUMENTATION_BASE_URL
+                                                   + family + '/' + ds_name) + '/ClassDescription.html',
+                            attributes_url=ds.get('pogo_docs_url_base',
+                                                  DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Attributes.html',
+                            commands_url=ds.get('pogo_docs_url_base',
+                                                DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Commands.html',
+                            properties_url=ds.get('pogo_docs_url_base',
+                                                  DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Properties.html'
+                        )
                         print 'XMI from doc size is %d.' % len(xmi_content)
                         files['xmi_file'] = (ds_name + '.xmi', xmi_content)
                         with open(LOG_PATH + '/' + files['xmi_file'][0], 'wb') as f:
@@ -281,7 +283,10 @@ class DscServerUtils:
 
                 # check if any of the xmi needs update
                 xmi_need_update = False
-                for xmi in ds['xmi_files']:
+                for xmi in ds['xmi_files'][:]:
+                    if str(xmi['name']).strip().lower().endswith('.multi.xmi'):
+                        ds['xmi_files'].remove(xmi)
+                        continue
                     if not ds_adding and date_parser.parse(server_ds['last_update']) < xmi['element']['date']:
                         xmi_need_update = True
                         break
@@ -471,7 +476,7 @@ class DscServerUtils:
                         print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi[
                             'name']
 
-            except ZeroDivisionError as e:
+            except Exception as e:
                 print e.message
                 ds_problems.append(ds)
 
