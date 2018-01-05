@@ -1,0 +1,2 @@
+name,repository_url,repository_type,tag,xmi_files_urls,pogo_docs_url_base,upload_xmi_file,readme_url,documentation_url,documentation_type,documentation_title,pogo_description_html,pogo_attributes_html,pogo_commands_html,pogo_properties_html
+LiberaBrilliancePlus,https://github.com/MaxIV-KitsControls/Libera-BrilliancePlus,GIT,v1.2.1-alpha,https://raw.githubusercontent.com/MaxIV-KitsControls/Libera-BrilliancePlus/v1.2.1-alpha/src/LiberaBrilliancePlus.xmi,,,https://raw.githubusercontent.com/MaxIV-KitsControls/Libera-BrilliancePlus/v1.2.1-alpha/README.md,,,,,,,
