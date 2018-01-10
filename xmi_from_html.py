@@ -20,88 +20,7 @@
 from lxml import etree
 from lxml.html import parse
 import re
-
-DS_COMMAND_DATATYPES = {
-    'BooleanType': 'DevBoolean',
-    'FloatType': 'DevFloat',
-    'DoubleType': 'DevDouble',
-    'IntType': 'DevLong',
-    'LongType': 'DevLong64',
-    'ShortType': 'DevShort',
-    'StringType': 'DevString',
-    'UIntType': 'DevULong',
-    'ULongType': 'DevULong64',
-    'UShortType': 'DevUShort',
-    'UCharType': 'DevUChar',
-    'CharType': 'DevChar',
-    'CharArrayType': 'DevVarCharArray',
-    'DoubleArrayType': 'DevVarDoubleArray',
-    'DoubleStringArrayType': 'DevVarDoubleStringArray',
-    'FloatArrayType': 'DevVarFloatArray',
-    'LongArrayType': 'DevVarLong64Array',
-    'IntArrayType': 'DevVarLongArray',
-    'LongStringArrayType': 'DevVarLongStringArray',
-    'ShortArrayType': 'DevVarShortArray',
-    'StringArrayType': 'DevVarStringArray',
-    'ULongArrayType': 'DevVarULong64Array',
-    'UIntArrayType': 'DevVarULongArray',
-    'UShortArrayType': 'DevVarUShortArray',
-    'VoidType': 'DevVoid',
-    'ConstStringType': 'ConstDevString',
-    'StateType': 'State'
-}
-DS_COMMAND_DATATYPES_REVERS = {v: k for k, v in DS_COMMAND_DATATYPES.items() }
-DS_COMMAND_DATATYPES_REVERS['DevState']='StateType'
-
-
-
-
-DS_ATTRIBUTE_DATATYPES = {
-    'BooleanType': 'DevBoolean',
-    'FloatType': 'DevFloat',
-    'DoubleType': 'DevDouble',
-    'IntType': 'DevLong',
-    'LongType': 'DevLong64',
-    'ShortType': 'DevShort',
-    'StringType': 'DevString',
-    'UIntType': 'DevULong',
-    'ULongType': 'DevULong64',
-    'UShortType': 'DevUShort',
-    'UCharType': 'DevUChar',
-    'CharType': 'DevChar',
-    'EncodedType': 'DevEncoded',
-    'StateType': 'DevState'
-}
-
-DS_ATTRIBUTE_DATATYPES_REVERS = {v: k for k, v in DS_ATTRIBUTE_DATATYPES.items() }
-
-DS_PROPERTIES_DATATYPES = {
-    'BooleanType': 'DevBoolean',
-    'FloatType': 'DevFloat',
-    'DoubleType': 'DevDouble',
-    'IntType': 'DevLong',
-    'LongType': 'DevLong64',
-    'ShortType': 'DevShort',
-    'StringType': 'DevString',
-    'UIntType': 'DevULong',
-    'ULongType': 'DevULong64',
-    'UShortType': 'DevUShort',
-    'UCharType': 'DevUChar',
-    'CharType': 'DevChar',
-    'BooleanVectorType': 'Array of DevBoolean',
-    'FloatVectorType': 'Array of DevFloat',
-    'DoubleVectorType': 'Array of DevDouble',
-    'IntVectorType': 'Array of DevLong',
-    'LongVectorType': 'Array of DevLong64',
-    'ShortVectorType': 'Array of DevShort',
-    'StringVectorType': 'Array of DevString',
-    'UIntVectorType': 'Array of DevULong',
-    'ULongVectorType': 'Array of DevULong64',
-    'UShortVectorType': 'Array of DevUShort',
-    'UCharVectorType': 'Array of DevUChar',
-    'CharVectorType': 'Array of DevChar',
-}
-
+from xmi_utils import *
 
 
 def get_xmi_from_html(description_url, attributes_url="", commands_url="", pipes_url="", properties_url=""):
@@ -130,7 +49,6 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:pogoDsl="http://www.
         # name
         if el.text is not None and el.text.strip().lower() == 'class':
             classes_xml.set('name', str(el.getnext().text).split(':')[1].strip())
-
 
         # family
         if el.text is not None and el.text.strip().lower() == 'family':
