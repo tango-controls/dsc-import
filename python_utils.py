@@ -193,6 +193,12 @@ def get_xmi_from_python(name, family, python_file_url):
     assert isinstance(ds_source, str)
     source_lines = ds_source.splitlines()
 
+    # find Tango class definition
+    class_source = get_class_content(source_lines, name + 'Class')
+
+    if len(class_source) == 0:
+        return None
+
     # find description part (comment)
     description_started = False
     class_description = ''
@@ -237,9 +243,6 @@ def get_xmi_from_python(name, family, python_file_url):
                 break
             # build the string
             copyleft += '\n' + match_result.group('copyleft').strip()
-
-    # find Tango class definition
-    class_source = get_class_content(source_lines, name + 'Class')
 
     # get list of attributes
     attr_list = get_class_dict_member(class_source, "attr_list")

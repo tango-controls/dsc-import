@@ -1,5 +1,6 @@
 FORCE_UPDATE = False  # when True no time stamps are checked and updates are performed for all valid device servers
 USE_DOC_FOR_NON_XMI = False # when True, parse documentation to get xmi conntent for device servers without XMI
+USE_PYTHON_FOR_NON_XMI = True # when True, try to parse python files if exists to generate missing xmi files
 ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
 FORCE_ONLY_GITHUB = False  # when true only force update of github (to initialy polpulate it with data)
 
