@@ -197,7 +197,7 @@ def get_xmi_from_python(name, family, python_file_url):
     description_started = False
     class_description = ''
     for line in source_lines:
-        if line.startswith("# %s Class Description" % name):
+        if re.match(r'#\s+' + name + r'\s+Class Description', line) is not None:
             description_started = True
 
         if description_started:
@@ -207,14 +207,45 @@ def get_xmi_from_python(name, family, python_file_url):
 
             class_description += line + '\n'
 
+    # find author
+    author = ''
+
+    for line in source:
+        if line.startswith("# $Author: "):
+            author = line[10:].strip()
+            break
+
+    # find copyright
+    copyleft = ''
+    copyleft_started = False
+
+    for line in source_lines:
+
+        if not copyleft_started:
+            # find the first line of the copyleft
+            match_result = re.match(r'#\s+copyleft\s*:\s*(?P<copyleft>.+)', line)
+            if match_result is not None:
+                copyleft_started = True
+                copyleft = match_result.group('copyleft').strip()
+        
+        else:
+            # check if we are still in the copyleft section
+            match_result = re.match(r'#\s+(?P<copyleft>.+)', line)
+            
+            if match_result is None:
+                # if not, stop processing
+                break
+            # build the string
+            copyleft += '\n' + match_result.group('copyleft').strip()
+
     # find Tango class definition
     class_source = get_class_content(source_lines, name + 'Class')
 
     # get list of attributes
-    attr_list = get_class_dict_member(class_source, "attr_list" )
+    attr_list = get_class_dict_member(class_source, "attr_list")
 
     # get list of commands
-    cmd_list = get_class_dict_member(class_source, "cmd_list" )
+    cmd_list = get_class_dict_member(class_source, "cmd_list")
 
     # get list of class properties
     class_property_list = get_class_dict_member(class_source, "class_property_list" )
@@ -226,7 +257,103 @@ def get_xmi_from_python(name, family, python_file_url):
     classes_xml = etree.SubElement(xmi_xml, 'classes')
     description_xml = etree.SubElement(classes_xml, 'description')
     identification_xml = etree.SubElement(description_xml, 'identification')
+    
+    classes_xml.set('name', name)
+    
+    identification_xml.set('classFamily', family)
+    
+    if author != '':
+        identification_xml.set('contact', author)
+        
+    identification_xml.set('language', 'Python')
+    
+    description_xml.set('description', class_description)
+    
+    # generate attributes
+    for attr_name, attr in attr_list.iteritems():
+        # xml element for attribute
+        attr_xml = etree.SubElement(classes_xml, 'attribute')
 
+        # populate fields
+        attr_xml.set('name', attr_name)
+        
+        etree.SubElement(attr_xml, 'dataType',
+                         attrib={
+                             etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'): 'pogoDsl:' + attr[0][0]
+                         })
+        
+        attr_xml.set('attType', attr[0][1])
+        
+        attr_xml.set('rwType', attr[0][2])
+
+        if len(attr) > 1:
+            attr_xml.set('description', attr[1].get('description', ''))
+            etree.SubElement(attr_xml, 'properties',
+                             attrib={
+                                 'description': attr[1].get('description', ''),
+                             })
+        
+    # generate commands xml    
+    for cmd_name, cmd in cmd_list.iteritems():
+        # xml element for the command
+        cmd_xml = etree.SubElement(classes_xml, 'commands')
+        
+        # populate fields
+        cmd_xml.set('name', cmd_name)
+        
+        if len(cmd) > 2:
+            cmd_xml.set('descritpion', cmd[2].get('description', ''))
+            
+            # if len(cmd[1].get('Polling period', '')) > 0:
+            #     cmd_xml.set('polledPerion', cmd[1].get('Polling period'))
+            # cmd_xml.set('descritpion', cmd[1].get('description', ''))
+        
+        # argin
+        argin_xml = etree.SubElement(cmd_xml, 'argin')        
+        argin_xml.set('description', cmd[0][1])
+        
+        argin_type_xml = etree.SubElement(argin_xml, 'type')
+        argin_type_xml.set(
+            etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'), 
+            'pogoDsl:' + cmd[0][0]
+        )        
+            
+        # argout
+        argout_xml = etree.SubElement(cmd_xml, 'argout')
+        argout_xml.set('description', cmd[1][1])
+
+        argout_type_xml = etree.SubElement(argout_xml, 'type')
+        argout_type_xml.set(
+            etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'),
+            'pogoDsl:' + cmd[1][0]
+        )
+
+    # generate class properties xml
+    for property_name, prop in class_property_list.iteritems():
+        # property xml element
+        property_xml = etree.SubElement(classes_xml, 'classProperty')
+
+        # fill attributes
+        property_xml.set('name', property_name)
+        property_xml.set('description', prop[1])
+
+        property_type_xml = etree.SubElement(property_xml, 'type')
+        property_type_xml.set(etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'), 'pogoDsl:'+prop[0])
+
+        # generate device properties xml
+        for property_name, prop in device_property_list.iteritems():
+            # property xml element
+            property_xml = etree.SubElement(classes_xml, 'deviceProperty')
+
+            # fill attributes
+            property_xml.set('name', property_name)
+            property_xml.set('description', prop[1])
+
+            property_type_xml = etree.SubElement(property_xml, 'type')
+            property_type_xml.set(etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'),
+                                  'pogoDsl:' + prop[0])
+
+    # return generated xml
     return '<?xml version="1.0" encoding="ASCII"?>' + etree.tostring(xmi_xml)
 
 
@@ -271,3 +398,8 @@ if __name__ == "__main__":
         print get_class_dict_member(class_content, 'cmd_list')
         print
 
+    print
+    print get_xmi_from_python('BakeOutControlDS', 'Vacuum', 'file:' + py_file1)
+
+    print
+    print get_xmi_from_python('LOCOSplitter', 'RF', 'file:' + py_file2)
