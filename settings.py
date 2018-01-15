@@ -8,12 +8,12 @@ TEST_SERVER_AUTH = False  # Set true if script is run against test server with a
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
 
 # if credentials below are None the script will ask for it with termina
-USER_LOGIN = None
-USER_PASSWORD = None
+# USER_LOGIN = None
+# USER_PASSWORD = None
 # one can provide cred.py locally to run script automatically (please not add it to git)
-# import cred
-# USER_LOGIN = cred.T_USER
-# USER_PASSWORD = cred.T_PASSWORD
+import cred
+USER_LOGIN = cred.T_USER
+USER_PASSWORD = cred.T_PASS
 
 # set the following variables to point to the repositories
 
