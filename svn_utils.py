@@ -35,7 +35,7 @@ def find_file_by_extensions(extensions, repo, path_base, max_depth, name=None):
         # if it is a directory
         if element['is_directory']:
             files_list.extend(
-                find_file_by_extensions(extentions=extensions, repo=repo,
+                find_file_by_extensions(extensions=extensions, repo=repo,
                                        path_base=path_base + '/' + element['name'],
                                        max_depth=max_depth - 1)
             )
@@ -173,10 +173,12 @@ def get_device_servers_list(repo, path_base, max_depth):
 
 
             elif element['name']=='trunk':
+                # print 'in trunk'
                 trunk_xmi_files = find_xmi(repo=repo, path_base=path_base+'/trunk', max_depth=max_depth-1)
                 trunk_py_files = find_file_by_extensions(['.py', '.PY'],
                                                        repo=repo, path_base=path_base + '/trunk',
                                                        max_depth=max_depth - 1)
+                # print trunk_py_files
                 trunk_java_files = find_file_by_extensions(['.java', '.JAVA'],
                                                          repo=repo, path_base=path_base + '/trunk',
                                                          max_depth=max_depth - 1)
@@ -264,20 +266,21 @@ def get_device_servers_list(repo, path_base, max_depth):
     elif candidate_for_ds:
         print 'No xmi files found for this candidate.'
         ds_list.append({'path':path_base, 'xmi_files':[], 'readme_files':[] })
-        if newest_tag is not None:
+        if newest_tag is not None and (len(tag_py_files) > 0 or len(tag_java_files) > 0):
+            # print newest_tag
             ds_list[len(ds_list) - 1]['tag'] = newest_tag
             ds_list[len(ds_list) - 1]['readme_files'] = tag_readme_files
             ds_list[len(ds_list) - 1]['py_files'] = tag_py_files
             ds_list[len(ds_list) - 1]['java_files'] = tag_java_files
-        elif len(trunk_readme_files)>0:
+        elif len(trunk_readme_files) > 0 or len(trunk_py_files) > 0 or len(trunk_java_files) > 0:
             ds_list[len(ds_list) - 1]['readme_files'] = trunk_readme_files
             ds_list[len(ds_list) - 1]['py_files'] = trunk_py_files
             ds_list[len(ds_list) - 1]['java_files'] = trunk_java_files
-        elif len(src_readme_files)>0:
+        elif len(src_readme_files) > 0 or len(src_py_files) > 0 or len(src_java_files) > 0:
             ds_list[len(ds_list) - 1]['readme_files'] = src_readme_files
             ds_list[len(ds_list) - 1]['py_files'] = src_py_files
             ds_list[len(ds_list) - 1]['java_files'] = src_java_files
-        elif len(local_readme_files) > 0:
+        elif len(local_readme_files) > 0 or len(local_py_files) > 0 or len(local_java_files) > 0:
             ds_list[len(ds_list) - 1]['readme_files'] = local_readme_files
             ds_list[len(ds_list) - 1]['py_files'] = local_py_files
             ds_list[len(ds_list) - 1]['java_files'] = local_java_files

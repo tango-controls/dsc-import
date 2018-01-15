@@ -157,6 +157,8 @@ class DscServerUtils:
                     link_documentation = True
 
                 xmi_from_doc = False
+                xmi_from_python = False
+                xmi_from_java = False
                 xmi_from_url = True
                 # xmi_content = ''
                 files = {}
@@ -220,9 +222,11 @@ class DscServerUtils:
 
                 # when there is no .xmi files yet, try to generate one from sources
                 if len(ds['xmi_files']) == 0 and USE_PYTHON_FOR_NON_XMI \
-                        and len(ds['py_files']) > 0 \
+                        and len(ds.get('py_files', [])) > 0 \
                         and not auto_ds_name \
                         and family is not None and family != '':
+
+                    # print ds['py_files']
 
                     for py_file in ds['py_files']:
                         # find class python file
@@ -238,7 +242,8 @@ class DscServerUtils:
                                         'py_url',
                                         REMOTE_REPO_URL + '/' + py_file.get('path', '') + '/' + py_file.get(
                                             'name')
-                                    )
+                                    ),
+                                    element=py_file.get('element', None)
                                 )
 
                                 if xmi_content is not None:
@@ -252,6 +257,8 @@ class DscServerUtils:
                                             'content': xmi_content
                                         },
                                     ]
+                                    xmi_from_url = False
+                                    xmi_from_python = True
                                 else:
                                     print "Filed to generate an XMI from %s. " % py_file['name']
 
@@ -391,7 +398,7 @@ class DscServerUtils:
                         'xmi_file_url': xmi_url,
                         'use_url_xmi_file': xmi_from_url,
                         'use_manual_info': False,
-                        'use_uploaded_xmi_file': xmi_from_doc,
+                        'use_uploaded_xmi_file': xmi_from_doc or xmi_from_python or xmi_from_java,
                         'available_in_repository': True,
                         'repository_url': ds_repo_url,
                         'repository_type': ds.get('repository_type', 'SVN'),
@@ -566,7 +573,7 @@ class DscServerUtils:
                         print 'Skipping update with the XMI: %s. Seems the catalogue is up to date for it.' % xmi[
                             'name']
 
-            except NotImplementedError as e:
+            except Exception as e:
                 print e.message
                 ds_problems.append(ds)
 

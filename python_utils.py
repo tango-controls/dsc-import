@@ -30,6 +30,10 @@ class DefaultCopyDict(dict):
     def __missing__(self, key):
         return key
 
+class DispLevel:
+
+    EXPERT = 'EXPERT'
+    OPERATOR = 'OPERATOR'
 
 class PyTangoClass:
     """ This is a mock class to allow eval on member lists"""
@@ -49,10 +53,16 @@ class PyTangoClass:
             "SPECTRUM": "Spectrum",
             "SCALAR": "Scalar"
         })
+        conversion_table.update({
+            "DispLevel": DispLevel(),
+        })
 
         # do a trick to populate PyTango class with conversion members
         # self.__class__.__dict__ = conversion_table
         self.__dict__ = conversion_table
+
+    def __missing__(self, key):
+        return key
 
 # PyTango mock
 PyTango = PyTangoClass()
@@ -162,7 +172,7 @@ def get_class_member_comment(source_lines, member_name):
     pass
 
 
-def get_xmi_from_python(name, family, python_file_url):
+def get_xmi_from_python(name, family, python_file_url, element = None):
     """
 
     :param name: name of the device server
@@ -207,19 +217,35 @@ def get_xmi_from_python(name, family, python_file_url):
             description_started = True
 
         if description_started:
-            if line.startswith('#==========================='):
+            if line.startswith('#===========================') or line.startswith(' ') or line == '':
                 # end of description
                 break
 
-            class_description += line + '\n'
+            class_description += line[2:].strip() + '\n'
+
+    # remove html
+    class_description = re.sub('</p>', '\n\n', class_description)
+    class_description = re.sub('<br/>', '\n\n', class_description)
+    class_description = re.sub('<br />', '\n\n', class_description)
+    class_description = re.sub('<b>\s*', '*', class_description)
+    class_description = re.sub('\s*</b>', '*', class_description)
+    class_description = re.sub(r"<a\s+[^>]*href=['\"](?P<hhref>[^'\"]+)['\"][^>]*(?=>)>\s*</a>", " \g<hhref> ",
+                               class_description)
+    class_description = re.sub('<[^<>a/]+?>', '', class_description)
+    class_description = re.sub('</[^a<>]+?>', '', class_description)
+    class_description = re.sub(r"<a\s+[^>]*href=['\"](?P<hhref>[^'\"]+)['\"][^>]*(?=>)>(?P<text>[\s[^<]]+(?=</a>))</a>",
+                               ' `\g<text> <\g<hhref>>`_ ', class_description )
 
     # find author
     author = ''
 
-    for line in source:
+    for line in source_lines:
         if line.startswith("# $Author: "):
-            author = line[10:].strip()
+            author = line[10:].replace('$','').strip()
             break
+
+    if author == '' and element is not None:
+        author = element.get('author','')
 
     # find copyright
     copyleft = ''
@@ -264,18 +290,24 @@ def get_xmi_from_python(name, family, python_file_url):
     classes_xml.set('name', name)
     
     identification_xml.set('classFamily', family)
+
+    identification_xml.set('platform', 'All Platforms')
+
+    identification_xml.set('reference', '')
+
+    identification_xml.set('manufacturer', '')
     
     if author != '':
         identification_xml.set('contact', author)
         
-    identification_xml.set('language', 'Python')
+    description_xml.set('language', 'Python')
     
     description_xml.set('description', class_description)
     
     # generate attributes
     for attr_name, attr in attr_list.iteritems():
         # xml element for attribute
-        attr_xml = etree.SubElement(classes_xml, 'attribute')
+        attr_xml = etree.SubElement(classes_xml, 'attributes')
 
         # populate fields
         attr_xml.set('name', attr_name)
@@ -334,7 +366,7 @@ def get_xmi_from_python(name, family, python_file_url):
     # generate class properties xml
     for property_name, prop in class_property_list.iteritems():
         # property xml element
-        property_xml = etree.SubElement(classes_xml, 'classProperty')
+        property_xml = etree.SubElement(classes_xml, 'classProperties')
 
         # fill attributes
         property_xml.set('name', property_name)
@@ -343,18 +375,18 @@ def get_xmi_from_python(name, family, python_file_url):
         property_type_xml = etree.SubElement(property_xml, 'type')
         property_type_xml.set(etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'), 'pogoDsl:'+prop[0])
 
-        # generate device properties xml
-        for property_name, prop in device_property_list.iteritems():
-            # property xml element
-            property_xml = etree.SubElement(classes_xml, 'deviceProperty')
+    # generate device properties xml
+    for property_name, prop in device_property_list.iteritems():
+        # property xml element
+        property_xml = etree.SubElement(classes_xml, 'deviceProperties')
 
-            # fill attributes
-            property_xml.set('name', property_name)
-            property_xml.set('description', prop[1])
+        # fill attributes
+        property_xml.set('name', property_name)
+        property_xml.set('description', prop[1])
 
-            property_type_xml = etree.SubElement(property_xml, 'type')
-            property_type_xml.set(etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'),
-                                  'pogoDsl:' + prop[0])
+        property_type_xml = etree.SubElement(property_xml, 'type')
+        property_type_xml.set(etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'),
+                              'pogoDsl:' + prop[0])
 
     # return generated xml
     return '<?xml version="1.0" encoding="ASCII"?>' + etree.tostring(xmi_xml)

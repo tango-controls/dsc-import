@@ -41,24 +41,31 @@ FAMILY_FROM_PATH_PARSER = r'DeviceClasses/([A-Za-z]*)/.*'
 DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/tango-ds/'
 
 # Tango Controls or test server address
-SERVER_BASE_URL = 'http://www.tango-controls.org/'
-# SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
+
+PRODUCTION_OPERATION = True
+
+if PRODUCTION_OPERATION:
+    SERVER_BASE_URL = 'http://www.tango-controls.org/'
+else:
+    SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
+
 # SERVER_BASE_URL = 'http://localhost:8080/'
 
-# settings for catalogue configuration on the server
-SERVER_DSC_URL = SERVER_BASE_URL+'developers/dsc/'
+if PRODUCTION_OPERATION:
+    # settings for catalogue configuration on the server
+    SERVER_DSC_URL = SERVER_BASE_URL+'developers/dsc/'
 
-SERVER_ADD_URL = SERVER_BASE_URL+'developers/dsc/add/'
+    SERVER_ADD_URL = SERVER_BASE_URL+'developers/dsc/add/'
 
-SERVER_LIST_URL = SERVER_BASE_URL+'developers/dsc/list/?repository_url='
+    SERVER_LIST_URL = SERVER_BASE_URL+'developers/dsc/list/?repository_url='
 
-SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/developers/dsc/'
+    SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/developers/dsc/'
+else:
+    # old server layout settings (for testing on dsc-test.modelowanie.pl
+    SERVER_DSC_URL = SERVER_BASE_URL+'resources/dsc/'
 
-# old server layout settings (for testing on dsc-test.modelowanie.pl
-# SERVER_DSC_URL = SERVER_BASE_URL+'resources/dsc/'
+    SERVER_ADD_URL = SERVER_BASE_URL+'resources/dsc/add/'
 
-# SERVER_ADD_URL = SERVER_BASE_URL+'resources/dsc/add/'
+    SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
 
-# SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
-
-# SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'
+    SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'
