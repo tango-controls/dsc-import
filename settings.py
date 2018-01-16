@@ -2,7 +2,16 @@ FORCE_UPDATE = False  # when True no time stamps are checked and updates are per
 USE_DOC_FOR_NON_XMI = False # when True, parse documentation to get xmi conntent for device servers without XMI
 USE_PYTHON_FOR_NON_XMI = True # when True, try to parse python files if exists to generate missing xmi files
 ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
-FORCE_ONLY_GITHUB = False  # when true only force update of github (to initialy polpulate it with data)
+FORCE_ONLY_GITHUB = False  # when true only force update of github (to initially populate it with data)
+
+# list of device servers (names) to be excluded from import. Useful to avoid duplication of device servers
+# existing in multiple repositories
+EXCLUDE_LIST = ['SimulatorDS', ]
+
+# list of device servers (names) that are allowed to be updated. Useful for making corrections
+# with FORCE_UPDATE. If not empty
+INCLUDE_ONLY_LIST = []
+
 
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional  authentication (webu test)
 VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
