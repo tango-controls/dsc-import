@@ -294,8 +294,18 @@ def get_xmi_from_java(name, family, java_file_url, element = None):
             attribute_description = comment_buffer
             comment_buffer = ''
 
-            # ommit other decorations
+            # pass through other decorations
             while source_lines[index].strip().startswith('@'):
+
+                line = source_lines[index].strip()
+                assert isinstance(line, str)
+
+                # check if descritpion can be updated
+                if line.startswith('@AttributeProperties'):
+                    match_result = re.match(r'description\s*=\s*"(?P<desc>[^"]+)"', line)
+                    if match_result is not None:
+                        attribute_description = match_result.group('desc')
+
                 index += 1
 
             # attribute name
@@ -319,24 +329,95 @@ def get_xmi_from_java(name, family, java_file_url, element = None):
                     'dataType',
                     attrib={
                         etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
-                            'pogoDsl:' + JAVA_DS_ATTRIBUTE_DATATYPES[match_result.group('type')][0]
+                            'pogoDsl:' + JAVA_DS_ATTRIBUTE_DATATYPES.get(
+                                             match_result.group('type'),
+                                             [match_result.group('type'), 'Scalar']
+                                         )[0]
                     }
                 )
 
-                attr_xml.set('attType', attr[0][1])
+                attr_xml.set(
+                    'attType',
+                    JAVA_DS_ATTRIBUTE_DATATYPES.get(match_result.group('type'), ['', 'Scalar'])[1]
+                )
 
-                attr_xml.set('rwType', attr[0][2])
+                attr_xml.set('rwType', 'READ_WRITE')
 
-                if len(attr) > 1:
-                    attr_xml.set('description', attribute_description)
-                    etree.SubElement(attr_xml, 'properties',
-                                     attrib={
-                                         'description': attribute_description),
-                                     })
+                attr_xml.set('description', attribute_description)
 
-
+                etree.SubElement(
+                    attr_xml, 'properties',
+                    attrib={
+                        'description': attribute_description,
+                    }
+                )
 
         # capture commands
+        if classes_xml is not None and line.strip().startswith('@Command'):
+
+            command_description = comment_buffer
+            comment_buffer = ''
+
+            # get description of argin and argout
+            argin_description = ''
+            argout_description = ''
+
+            match_result = re.match(r'inTypeDesc\s*=\s*"(?P<desc>[^"]+)"', line)
+            if match_result is not None:
+                argin_description = match_result.group('desc')
+
+            match_result = re.match(r'outTypeDesc\s*=\s*"(?P<desc>[^"]+)"', line)
+            if match_result is not None:
+                argout_description = match_result.group('desc')
+
+            # walk through other decorations
+            while source_lines[index].strip().startswith('@'):
+                index += 1
+
+            # command name and type
+            line = ' ' + source_lines[index].strip()
+            match_result = re.match(
+                r'.*(?=\s[a-zA-Z]+[[]]*\s+[a-zA-Z0-9]+\s*[=;])'
+                r'\s(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[(]',
+                ' ' + line
+            )
+            if match_result is None:
+                continue
+            else:
+                command_name = match_result.group('name')
+                argout_type = JAVA_DS_COMMAND_DATATYPES.get(match_result.group('type'), match_result.group('type'))
+
+            # argin type
+            match_result = re.match(r'(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[)]', line)
+            if match_result is not None:
+                argin_type = JAVA_DS_COMMAND_DATATYPES.get(match_result.group('type'), match_result.group('type'))
+
+            # create xml entries
+            cmd_xml = etree.SubElement(classes_xml, 'commands')
+
+            # populate fields
+            cmd_xml.set('name', command_name)
+            cmd_xml.set('descritpion', command_description)
+
+            # argin
+            argin_xml = etree.SubElement(cmd_xml, 'argin')
+            argin_xml.set('description', argin_description)
+
+            argin_type_xml = etree.SubElement(argin_xml, 'type')
+            argin_type_xml.set(
+                etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'),
+                'pogoDsl:' + argin_type
+            )
+
+            # argout
+            argout_xml = etree.SubElement(cmd_xml, 'argout')
+            argout_xml.set('description', argout_description)
+
+            argout_type_xml = etree.SubElement(argout_xml, 'type')
+            argout_type_xml.set(
+                etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'),
+                'pogoDsl:' + argout_type
+            )
 
         # capture device properties
 
@@ -348,30 +429,7 @@ def get_xmi_from_java(name, family, java_file_url, element = None):
 
 
     
-    # generate attributes
-    for attr_name, attr in attr_list.iteritems():
-        # xml element for attribute
-        attr_xml = etree.SubElement(classes_xml, 'attributes')
 
-        # populate fields
-        attr_xml.set('name', attr_name)
-        
-        etree.SubElement(attr_xml, 'dataType',
-                         attrib={
-                             etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'): 'pogoDsl:' + attr[0][0]
-                         })
-        
-        attr_xml.set('attType', attr[0][1])
-        
-        attr_xml.set('rwType', attr[0][2])
-
-        if len(attr) > 1:
-            attr_xml.set('description', attr[1].get('description', ''))
-            etree.SubElement(attr_xml, 'properties',
-                             attrib={
-                                 'description': attr[1].get('description', ''),
-                             })
-        
     # generate commands xml    
     for cmd_name, cmd in cmd_list.iteritems():
         # xml element for the command
