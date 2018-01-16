@@ -85,13 +85,13 @@ print 'Found %d device servers.' % len(ds_list)
 
 # apply exclude list
 for ds in ds_list[:]:
-    if ds['name'] in EXCLUDE_LIST:
+    if os.path.basename(ds.get('path', ds.get('name', ''))) in EXCLUDE_LIST:
         ds_list.remove(ds)
 
 # apply include only
 if len(INCLUDE_ONLY_LIST) > 0:
     for ds in ds_list[:]:
-        if ds['name'] not in INCLUDE_ONLY_LIST:
+        if os.path.basename(ds.get('path', ds.get('name', ''))) not in INCLUDE_ONLY_LIST:
             ds_list.remove(ds)
 
 # update the catalogue
