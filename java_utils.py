@@ -172,7 +172,7 @@ def get_class_member_comment(source_lines, member_name):
     pass
 
 
-def get_xmi_from_python(name, family, python_file_url, element = None):
+def get_xmi_from_java(name, family, java_file_url, element = None):
     """
 
     :param name: name of the device server
@@ -191,11 +191,11 @@ def get_xmi_from_python(name, family, python_file_url, element = None):
     )
 
     # open url
-    url_response = urllib2.urlopen(python_file_url)
+    url_response = urllib2.urlopen(java_file_url)
     size = int(url_response.info().get('Content-Length', 0))
     if size < 10 or size > 500000:
         print
-        print "Python file size out of limits. "
+        print "Java file size out of limits. "
         return None
 
     # read the file
@@ -203,106 +203,150 @@ def get_xmi_from_python(name, family, python_file_url, element = None):
     assert isinstance(ds_source, str)
     source_lines = ds_source.splitlines()
 
-    # find Tango class definition
-    class_source = get_class_content(source_lines, name + 'Class')
 
-    if len(class_source) == 0:
-        return None
-
-    # find description part (comment)
-    description_started = False
-    class_description = ''
-    for line in source_lines:
-        if re.match(r'#\s+' + name + r'\s+Class Description', line) is not None:
-            description_started = True
-
-        if description_started:
-            if line.startswith('#===========================') or line.startswith(' ') or line == '':
-                # end of description
-                break
-
-            class_description += line[2:].strip() + '\n'
-
-    # remove html
-    class_description = re.sub('</p>', '\n\n', class_description)
-    class_description = re.sub('<br/>', '\n\n', class_description)
-    class_description = re.sub('<br />', '\n\n', class_description)
-    class_description = re.sub('<b>\s*', '*', class_description)
-    class_description = re.sub('\s*</b>', '*', class_description)
-    class_description = re.sub(r"<a\s+[^>]*href=['\"](?P<hhref>[^'\"]+)['\"][^>]*(?=>)>\s*</a>", " \g<hhref> ",
-                               class_description)
-    class_description = re.sub('<[^<>a/]+?>', '', class_description)
-    class_description = re.sub('</[^a<>]+?>', '', class_description)
-    class_description = re.sub(r"<a\s+[^>]*href=['\"](?P<hhref>[^'\"]+)['\"][^>]*(?=>)>(?P<text>[\s[^<]]+(?=</a>))</a>",
-                               ' `\g<text> <\g<hhref>>`_ ', class_description )
-
-    # find author
     author = ''
 
-    for line in source_lines:
-        if line.startswith("# $Author: "):
-            author = line[10:].replace('$', '').strip()
-            break
 
-    if author == '' and element is not None:
-        author = element.get('author', '')
-
-    # find copyright
     copyleft = ''
-    copyleft_started = False
 
-    for line in source_lines:
-
-        if not copyleft_started:
-            # find the first line of the copyleft
-            match_result = re.match(r'#\s+copyleft\s*:\s*(?P<copyleft>.+)', line)
-            if match_result is not None:
-                copyleft_started = True
-                copyleft = match_result.group('copyleft').strip()
-        
-        else:
-            # check if we are still in the copyleft section
-            match_result = re.match(r'#\s+(?P<copyleft>.+)', line)
-            
-            if match_result is None:
-                # if not, stop processing
-                break
-            # build the string
-            copyleft += '\n' + match_result.group('copyleft').strip()
-
-    # get list of attributes
-    attr_list = get_class_dict_member(class_source, "attr_list")
-
-    # get list of commands
-    cmd_list = get_class_dict_member(class_source, "cmd_list")
-
-    # get list of class properties
-    class_property_list = get_class_dict_member(class_source, "class_property_list" )
-
-    # get list of device properties
-    device_property_list = get_class_dict_member(class_source, "device_property_list" )
 
     # generate xmi
-    classes_xml = etree.SubElement(xmi_xml, 'classes')
-    description_xml = etree.SubElement(classes_xml, 'description')
-    identification_xml = etree.SubElement(description_xml, 'identification')
-    
-    classes_xml.set('name', name)
-    
-    identification_xml.set('classFamily', family)
+    comment_buffer = ''
+    classes_xml = None
+    description_xml = None
+    identification_xml = None
+    in_comment = False
 
-    identification_xml.set('platform', 'All Platforms')
+    index = 0
 
-    identification_xml.set('reference', '')
+    while index < len(source_lines):
 
-    identification_xml.set('manufacturer', '')
-    
-    if author != '':
-        identification_xml.set('contact', author)
-        
-    description_xml.set('language', 'Python')
-    
-    description_xml.set('description', class_description)
+        line = source_lines[index]
+
+        assert isinstance(line, str)
+        # capture comments to be used for description
+        if line.strip().startswith("/*"):
+            comment_buffer = ''
+            in_comment = True
+
+        if line.strip().endswith("*/"):
+            in_comment = False
+
+        if in_comment:
+            comment_buffer += line.strip().lstrip('*') + '\n'
+
+        # capture class definition
+        if line.strip().startswith('@Device'):
+
+            # clean comment buffer from html tags for class description
+            class_description = re.sub('</p>', '\n\n', comment_buffer)
+            class_description = re.sub('<br/>', '\n\n', class_description)
+            class_description = re.sub('<br />', '\n\n', class_description)
+            class_description = re.sub('<b>\s*', '*', class_description)
+            class_description = re.sub('\s*</b>', '*', class_description)
+            class_description = re.sub(r"<a\s+[^>]*href=['\"](?P<hhref>[^'\"]+)['\"][^>]*(?=>)>\s*</a>", " \g<hhref> ",
+                                       class_description)
+            class_description = re.sub('<[^<>a/]+?>', '', class_description)
+            class_description = re.sub('</[^a<>]+?>', '', class_description)
+            class_description = re.sub(
+                r"<a\s+[^>]*href=['\"](?P<hhref>[^'\"]+)['\"][^>]*(?=>)>(?P<text>[\s[^<]]+(?=</a>))</a>",
+                ' `\g<text> <\g<hhref>>`_ ', class_description)
+
+            comment_buffer = ''
+
+            # get class name
+            index +=1
+            line = source_lines[index]
+            match_result = re.match(r".*(?=class)class\s+(?P<class_name>[^\s({:]+)", line)
+
+            if match_result is None:
+                continue
+
+            else:
+                class_name = match_result.group('class_name')
+
+                # xml elements
+                classes_xml = etree.SubElement(xmi_xml, 'classes')
+                description_xml = etree.SubElement(classes_xml, 'description')
+                identification_xml = etree.SubElement(description_xml, 'identification')
+
+                # provides attributes
+                classes_xml.set('name', class_name)
+
+                identification_xml.set('classFamily', family)
+                identification_xml.set('platform', 'All Platforms')
+                identification_xml.set('reference', '')
+                identification_xml.set('manufacturer', '')
+
+                if author == '' and element is not None:
+                    author = element.get('author', '')
+
+                if author != '':
+                    identification_xml.set('contact', author)
+
+                description_xml.set('language', 'Java')
+                description_xml.set('description', class_description)
+
+        # capture attributes
+        if classes_xml is not None and line.strip().startswith('@Attribute'):
+
+            # attribute description
+            attribute_description = comment_buffer
+            comment_buffer = ''
+
+            # ommit other decorations
+            while source_lines[index].strip().startswith('@'):
+                index += 1
+
+            # attribute name
+            line = source_lines[index].strip()
+            match_result = re.match(
+                r'.*(?=\s[a-zA-Z]+[[]]*\s+[a-zA-Z0-9]+\s*[=;])'
+                r'\s(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
+                ' ' + line
+            )
+            if match_result is None:
+                continue
+            else:
+
+                attr_xml = etree.SubElement(classes_xml, 'attributes')
+
+                # populate fields
+                attr_xml.set('name', match_result.group('name'))
+
+                etree.SubElement(
+                    attr_xml,
+                    'dataType',
+                    attrib={
+                        etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                            'pogoDsl:' + JAVA_DS_ATTRIBUTE_DATATYPES[match_result.group('type')][0]
+                    }
+                )
+
+                attr_xml.set('attType', attr[0][1])
+
+                attr_xml.set('rwType', attr[0][2])
+
+                if len(attr) > 1:
+                    attr_xml.set('description', attribute_description)
+                    etree.SubElement(attr_xml, 'properties',
+                                     attrib={
+                                         'description': attribute_description),
+                                     })
+
+
+
+        # capture commands
+
+        # capture device properties
+
+        # capture class properties
+
+        index += 1
+
+
+
+
     
     # generate attributes
     for attr_name, attr in attr_list.iteritems():
