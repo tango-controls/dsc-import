@@ -82,10 +82,15 @@ def get_xmi_from_java(name, family, java_file_url, element=None):
             in_comment = False
 
         if in_comment:
-            comment_buffer += line.strip().lstrip('*') + '\n'
+            comment_line = line.strip().lstrip('/').lstrip('*').strip()
+            comment_buffer += comment_line + '\n\n'
+            # find author
+            match_result = re.match('@author\s+(?P<author>.+)', comment_line)
+            if match_result is not None:
+                author = match_result.group('author').strip('$')
 
         # capture class definition
-        if line.strip().startswith('@Device'):
+        if line.strip().startswith('@Device') and not line.strip().startswith('@DeviceProp'):
 
             # clean comment buffer from html tags for class description
             class_description = re.sub('</p>', '\n\n', comment_buffer)
@@ -159,9 +164,10 @@ def get_xmi_from_java(name, family, java_file_url, element=None):
 
             # attribute name
             line = source_lines[index].strip()
+
             match_result = re.match(
-                r'.*(?=\s[a-zA-Z]+[[]]*\s+[a-zA-Z0-9]+\s*[=;])'
-                r'\s(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
+                r'.*(?=\s[a-zA-Z[\]]+\s+[a-zA-Z0-9]+\s*[=;])'
+                r'\s(?P<type>[a-zA-Z[\]]+)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
                 ' ' + line
             )
             if match_result is None:
@@ -225,20 +231,21 @@ def get_xmi_from_java(name, family, java_file_url, element=None):
                 index += 1
 
             # command name and type
-            line = ' ' + source_lines[index].strip()
+            line = source_lines[index].strip()
             match_result = re.match(
-                r'.*(?=\s[a-zA-Z]+[[]]*\s+[a-zA-Z0-9]+\s*[(])'
-                r'\s(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[(]',
+                r'.*(?=\s[a-zA-Z[\]]+\s+[a-zA-Z0-9]+\s*\()'
+                r'\s(?P<type>[a-zA-Z[\]]+)\s+(?P<name>[a-zA-Z0-9]+)\s*\(',
                 ' ' + line
             )
             if match_result is None:
+                print 'not match'
                 continue
             else:
                 command_name = match_result.group('name')
                 argout_type = JAVA_DS_COMMAND_DATATYPES.get(match_result.group('type'), match_result.group('type'))
 
             # argin type
-            match_result = re.match(r'(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[)]', line)
+            match_result = re.match(r'(?P<type>[a-zA-Z]+[[\]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[)]', line)
             if match_result is not None:
                 argin_type = JAVA_DS_COMMAND_DATATYPES.get(match_result.group('type'), match_result.group('type'))
 
@@ -282,8 +289,8 @@ def get_xmi_from_java(name, family, java_file_url, element=None):
             # pipe name and type
             line = ' ' + source_lines[index].strip()
             match_result = re.match(
-                r'.*(?=\s[a-zA-Z]+[[]]*\s+[a-zA-Z0-9]+\s*[=;])'
-                r'\s(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
+                r'.*(?=\s[a-zA-Z]+[[\]]*\s+[a-zA-Z0-9]+\s*[=;])'
+                r'\s(?P<type>[a-zA-Z]+[[\]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
                 ' ' + line
             )
             if match_result is None:
@@ -311,8 +318,8 @@ def get_xmi_from_java(name, family, java_file_url, element=None):
             # property name and type
             line = ' ' + source_lines[index].strip()
             match_result = re.match(
-                r'.*(?=\s[a-zA-Z]+[[]]*\s+[a-zA-Z0-9]+\s*[=;])'
-                r'\s(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
+                r'.*(?=\s[a-zA-Z]+[[\]]*\s+[a-zA-Z0-9]+\s*[=;])'
+                r'\s(?P<type>[a-zA-Z]+[[\]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
                 ' ' + line
             )
             if match_result is None:
@@ -348,8 +355,8 @@ def get_xmi_from_java(name, family, java_file_url, element=None):
             # property name and type
             line = ' ' + source_lines[index].strip()
             match_result = re.match(
-                r'.*(?=\s[a-zA-Z]+[[]]*\s+[a-zA-Z0-9]+\s*[=;])'
-                r'\s(?P<type>[a-zA-Z]+[[]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
+                r'.*(?=\s[a-zA-Z]+[[\]]*\s+[a-zA-Z0-9]+\s*[=;])'
+                r'\s(?P<type>[a-zA-Z]+[[\]]*)\s+(?P<name>[a-zA-Z0-9]+)\s*[=;]',
                 ' ' + line
             )
             if match_result is None:
@@ -382,3 +389,7 @@ if __name__ == "__main__":
     # main function perform tests
     java_file = 'test-assets/ControlSystemMonitor.java'
     print get_xmi_from_java('ControlSystemMonitor', 'SoftwareSystems', 'file:' + java_file)
+
+    print
+    java_file = 'test-assets/Notifier.java'
+    print get_xmi_from_java('Notifier', 'SoftwareSystems', 'file:' + java_file)

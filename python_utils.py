@@ -221,7 +221,7 @@ def get_xmi_from_python(name, family, python_file_url, element = None):
                 # end of description
                 break
 
-            class_description += line[2:].strip() + '\n'
+            class_description += line[2:].strip() + '\n\n'
 
     # remove html
     class_description = re.sub('</p>', '\n\n', class_description)

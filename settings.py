@@ -1,7 +1,8 @@
 FORCE_UPDATE = False  # when True no time stamps are checked and updates are performed for all valid device servers
-USE_DOC_FOR_NON_XMI = False # when True, parse documentation to get xmi conntent for device servers without XMI
-USE_PYTHON_FOR_NON_XMI = True # when True, try to parse python files if exists to generate missing xmi files
-ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
+USE_DOC_FOR_NON_XMI = False  # when True, parse documentation to get xmi contents for device servers without XMI
+USE_PYTHON_FOR_NON_XMI = True  # when True, try to parse python files if exists to generate missing xmi files
+USE_JAVA_FOR_NON_XMI = True  # when True, try to parse JAVA files if exists to generate missing xmi files
+ADD_LINK_TO_DOCUMENTATION = True  # when True it provides a link to documentation
 FORCE_ONLY_GITHUB = False  # when true only force update of github (to initially populate it with data)
 
 # list of device servers (names) to be excluded from import. Useful to avoid duplication of device servers
@@ -14,9 +15,9 @@ INCLUDE_ONLY_LIST = []
 
 
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional  authentication (webu test)
-VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
+VERIFY_CERT = False  # set this to false if running against test server without a valid certificate
 
-# if credentials below are None the script will ask for it with termina
+# if credentials below are None the script will ask for it with terminal
 USER_LOGIN = None
 USER_PASSWORD = None
 # one can provide cred.py locally to run script automatically (please not add it to git)
@@ -39,7 +40,7 @@ LOCAL_REPO_URL = 'file://%s' % LOCAL_REPO_PATH
 # command used to synchronize local SVN repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
 
-# if one would like to limit searched treee (useful for one device server update and or tests)
+# if one would like to limit searched tree (useful for one device server update and or tests)
 # do not provide start nor end slashes
 REPO_START_PATH = 'DeviceClasses'
 
