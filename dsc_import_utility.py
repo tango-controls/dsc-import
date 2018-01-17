@@ -71,7 +71,7 @@ if args.csv_file is None:
 
     print 'Getting a list of device server in the repository...'
     repo = svn.remote.RemoteClient(LOCAL_REPO_URL)
-    ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 10)
+    ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 15)
 
 else:
     # if SV file provided the list is built according to it

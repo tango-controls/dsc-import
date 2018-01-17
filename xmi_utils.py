@@ -50,6 +50,31 @@ DS_COMMAND_DATATYPES = {
 DS_COMMAND_DATATYPES_REVERS = {v: k for k, v in DS_COMMAND_DATATYPES.items() }
 DS_COMMAND_DATATYPES_REVERS['DevState']='StateType'
 
+JAVA_DS_COMMAND_DATATYPES = {
+    'boolean': 'BooleanType',
+    'float': 'FloatType',
+    'double': 'DoubleType',
+    'int': 'IntType',
+    'long': 'LongType',
+    'short': 'ShortType',
+    'String': 'StringType',
+    'byte': 'UCharType',
+    'byte[]': 'CharArrayType',
+    'double[]': 'DoubleArrayType',
+    'DevVarDoubleStringArray': 'DoubleStringArrayType',
+    'float[]': 'FloatArrayType',
+    'long[]': 'LongArrayType',
+    'DevVarLongStringArray': 'LongStringArrayType',
+    'short[]': 'ShortArrayType',
+    'String[]': 'StringArrayType',
+    'void': 'VoidType',
+    'ConstStringType': 'ConstDevString',
+    'DevState':'StateType',
+    'DeviceState': 'StateType',
+    'DevEncoded': 'EncodedType',    
+}
+JAVA_DS_COMMAND_DATATYPES_REVERS = {v: k for k, v in JAVA_DS_COMMAND_DATATYPES.items() }
+
 
 
 
@@ -71,6 +96,48 @@ DS_ATTRIBUTE_DATATYPES = {
 }
 
 DS_ATTRIBUTE_DATATYPES_REVERS = {v: k for k, v in DS_ATTRIBUTE_DATATYPES.items() }
+
+JAVA_DS_ATTRIBUTE_DATATYPES = {
+    'boolean': ['BooleanType', 'Scalar'],
+    'float': ['FloatType', 'Scalar'],
+    'double': ['DoubleType', 'Scalar'],
+    'int': ['IntType', 'Scalar'],
+    'long': ['LongType', 'Scalar'],
+    'short': ['ShortType', 'Scalar'],
+    'String': ['StringType', 'Scalar'],
+    'byte': ['UCharType', 'Scalar'],
+    'DevState': ['StateType', 'Scalar'],
+    'DeviceState': ['StateType', 'Scalar'],
+    'DevEncoded': ['EncodedType', 'Scalar'],
+    'Enum': ['EnumType', 'Scalar'],
+    
+    'boolean[]': ['BooleanType', 'Spectrum'],
+    'float[]': ['FloatType', 'Spectrum'],
+    'double[]': ['DoubleType', 'Spectrum'],
+    'int[]': ['IntType', 'Spectrum'],
+    'long[]': ['LongType', 'Spectrum'],
+    'short[]': ['ShortType', 'Spectrum'],
+    'String[]': ['StringType', 'Spectrum'],
+    'byte[]': ['UCharType', 'Spectrum'],
+    'DevState[]': ['StateType', 'Spectrum'],
+    'DeviceState[]': ['StateType', 'Spectrum'],
+    'DevEncoded[]': ['EncodedType', 'Spectrum'],
+    'Enum[]': ['EnumType', 'Spectrum'],
+    
+    'boolean[][]': ['BooleanType', 'Image'],
+    'float[][]': ['FloatType', 'Image'],
+    'double[][]': ['DoubleType', 'Image'],
+    'int[][]': ['IntType', 'Image'],
+    'long[][]': ['LongType', 'Image'],
+    'short[][]': ['ShortType', 'Image'],
+    'String[][]': ['StringType', 'Image'],
+    'byte[][]': ['UCharType', 'Image'],
+    'DevState[][]': ['StateType', 'Image'],
+    'DeviceState[][]': ['StateType', 'Image'],
+    'DevEncoded[][]': ['EncodedType', 'Image'],
+    'Enum[][]': ['EnumType', 'Image'],
+    
+}
 
 DS_PROPERTIES_DATATYPES = {
     'BooleanType': 'DevBoolean',

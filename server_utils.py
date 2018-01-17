@@ -28,12 +28,7 @@ import requests.auth
 
 from xmi_from_html import get_xmi_from_html
 import python_utils
-
-
-
-from datetime import datetime
-from pytz import utc
-import requests
+import java_utils
 
 from settings import *
 
@@ -265,6 +260,53 @@ class DscServerUtils:
                             except Exception as e:
                                 print "Filed to generate an XMI from %s. " % py_file['name']
                                 print e.message
+
+                            break
+                            
+                # when there is no .xmi files yet, try to generate one from java sources
+                if len(ds['xmi_files']) == 0 and USE_JAVA_FOR_NON_XMI \
+                        and len(ds.get('java_files', [])) > 0 \
+                        and not auto_ds_name \
+                        and family is not None and family != '':    
+                    
+                    for java_file in ds['java_files']:
+                        # find class python file
+                        if java_file['name'] in [ds_name + '.java', ds_name + '.JAVA']:
+    
+                            print "Trying to generate an XMI from a %s file..." % java_file['name']
+    
+                            try:
+                                # get xmi if possible
+                                xmi_content = java_utils.get_xmi_from_java(
+                                    ds_name, family,
+                                    java_file.get(
+                                        'java_url',
+                                        REMOTE_REPO_URL + '/' + java_file.get('path', '') + '/' + java_file.get(
+                                            'name')
+                                    ),
+                                    element=java_file.get('element', None)
+                                )
+    
+                                if xmi_content is not None:
+                                    print 'The XMI is generated. Size of the XMI is %d.' % len(xmi_content)
+    
+                                    ds['xmi_files'] = [
+                                        {
+                                            'name': ds_name + '.xmi',
+                                            'path': '',
+                                            'element': java_file['element'],
+                                            'content': xmi_content
+                                        },
+                                    ]
+                                    xmi_from_url = False
+                                    xmi_from_python = True
+                                else:
+                                    print "Filed to generate an XMI from %s. " % java_file['name']
+    
+                            except Exception as e:
+                                print "Filed to generate an XMI from %s. " % java_file['name']
+                                print e.message
+
                             break
 
                 if len(ds['xmi_files']) == 0:

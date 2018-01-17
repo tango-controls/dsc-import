@@ -221,7 +221,7 @@ def get_xmi_from_python(name, family, python_file_url, element = None):
                 # end of description
                 break
 
-            class_description += line[2:].strip() + '\n'
+            class_description += line[2:].strip() + '\n\n'
 
     # remove html
     class_description = re.sub('</p>', '\n\n', class_description)
@@ -241,11 +241,11 @@ def get_xmi_from_python(name, family, python_file_url, element = None):
 
     for line in source_lines:
         if line.startswith("# $Author: "):
-            author = line[10:].replace('$','').strip()
+            author = line[10:].replace('$', '').strip()
             break
 
     if author == '' and element is not None:
-        author = element.get('author','')
+        author = element.get('author', '')
 
     # find copyright
     copyleft = ''
