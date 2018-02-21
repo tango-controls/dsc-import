@@ -419,6 +419,7 @@ class DscServerUtils:
                     xmi_need_update = True
 
                 for xmi in ds['xmi_files']:
+                    sleep(10)
                     print "XMI file: %s" % xmi['name']
 
                     xmi_url = xmi.get('xmi_url', REMOTE_REPO_URL + '/' + xmi.get('path', '') + '/' + xmi.get('name'))
