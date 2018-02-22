@@ -62,13 +62,13 @@ class DscServerUtils:
             ba_password = getpass('Basic auth password: ')
             self.client.auth = requests.auth.HTTPBasicAuth(ba_login, ba_password)
 
-        self.client.get(SERVER_LOGIN_URL)
+        self.client.get(SERVER_LOGIN_URL, timeout=10)
 
         self.csrftoken = self.client.cookies['csrftoken']
         print self.csrftoken
 
         login_data = dict(login=login, password=password, csrfmiddlewaretoken=self.csrftoken)
-        r = self.client.post(SERVER_LOGIN_URL, data=login_data, headers={'Referer': SERVER_LOGIN_URL})
+        r = self.client.post(SERVER_LOGIN_URL, data=login_data, headers={'Referer': SERVER_LOGIN_URL}, timeout = 10)
         self.referrer = SERVER_LOGIN_URL
 
         if r.status_code != 200:
@@ -135,7 +135,7 @@ class DscServerUtils:
                         documentation_type = 'Generated'
 
                         # doc_check_client = requests.session()
-                        r = requests.get(documentation_url, allow_redirects=False)
+                        r = requests.get(documentation_url, allow_redirects=False, timeout=10)
                         if r.status_code != 200:
                             print 'It seems this device server is not documented in a standard path.'
                             link_documentation = False
@@ -177,28 +177,32 @@ class DscServerUtils:
                             ds.get(
                                 'pogo_docs_url_base',
                                 DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
-                            ) + '/' + ds.get('pogo_description_html', 'ClassDescription.html')
+                            ) + '/' + ds.get('pogo_description_html', 'ClassDescription.html'),
+                            timeout=10
                         ),
 
                         attributes_url=urllib2.urlopen(
                             ds.get(
                                 'pogo_docs_url_base',
                                 DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
-                            ) + '/' + ds.get('pogo_attributes_html', 'Attributes.html')
+                            ) + '/' + ds.get('pogo_attributes_html', 'Attributes.html'),
+                            timeout=10
                         ),
 
                         commands_url=urllib2.urlopen(
                             ds.get(
                                 'pogo_docs_url_base',
                                 DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
-                            ) + '/' + ds.get('pogo_commands_html', 'Commands.html')
+                            ) + '/' + ds.get('pogo_commands_html', 'Commands.html'),
+                            timeout=10
                         ),
 
                         properties_url=urllib2.urlopen(
                             ds.get(
                                 'pogo_docs_url_base',
                                 DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
-                            ) + '/' + ds.get('pogo_properties_html', 'Properties.html')
+                            ) + '/' + ds.get('pogo_properties_html', 'Properties.html'),
+                            timeout=10
                         )
                     )
 
@@ -319,13 +323,15 @@ class DscServerUtils:
                 if ds.get('repository_url', None) is not None:
                     r = self.client.get(
                         SERVER_LIST_URL + ds.get('repository_url'),
-                        headers={'Referer': self.referrer}
+                        headers={'Referer': self.referrer},
+                        timeout=10 
                     )
                     self.referrer = SERVER_LIST_URL + ds.get('repository_url')
                 else:
                     r = self.client.get(
                         SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
-                        headers={'Referer': self.referrer}
+                        headers={'Referer': self.referrer},
+                        timeout=10
                     )
                     self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
 
@@ -383,7 +389,7 @@ class DscServerUtils:
                             readme_url_response = urllib2.urlopen(readme_file.get('readme_url',
                                                                                   REMOTE_REPO_URL + '/' + readme_file[
                                                                                       'path']
-                                                                                  + '/' + readme_file['name']))
+                                                                                  + '/' + readme_file['name']), timeout=10)
                             readme_file_size = int(readme_url_response.info().get('Content-Length', 0))
                             if readme_file_size < 5 or readme_file_size > 2000000:
                                 print 'Readme file size %d is out of limits. Skipping.' % readme_file_size
@@ -463,7 +469,7 @@ class DscServerUtils:
                         if ds_adding:
                             # case when device server does not yet exists on the server
                             # connect to the adding form
-                            self.client.get(SERVER_ADD_URL, headers={'Referer': self.referrer})  # sets the cookie
+                            self.client.get(SERVER_ADD_URL, headers={'Referer': self.referrer}, timeout=10)  # sets the cookie
                             self.referrer = SERVER_ADD_URL
                             self.csrftoken = self.client.cookies['csrftoken']
 
@@ -478,7 +484,8 @@ class DscServerUtils:
                                 SERVER_ADD_URL,
                                 data=data_to_send,
                                 files=files,
-                                headers={'Referer': self.referrer}
+                                headers={'Referer': self.referrer},
+                                timeout=10
                             )
 
                             print 'Adding HTTP result code: %d' % r.status_code
@@ -489,7 +496,8 @@ class DscServerUtils:
                             # list device servers in the repository
                             r = self.client.get(
                                 SERVER_LIST_URL + ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', '')),
-                                headers={'Referer': self.referrer}
+                                headers={'Referer': self.referrer},
+                                timeout=10
                             )
                             self.referrer = SERVER_LIST_URL + ds.get(
                                 'repository_url',
@@ -518,7 +526,8 @@ class DscServerUtils:
                             # connect to update form
                             self.client.get(
                                 SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                                headers={'Referer': self.referrer}
+                                headers={'Referer': self.referrer},
+                                timeout=10
                             )
                             self.referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
                             self.csrftoken = self.client.cookies['csrftoken']
@@ -539,7 +548,8 @@ class DscServerUtils:
                             r = self.client.post(
                                 SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
                                 data=data_to_send,
-                                files=files, headers={'Referer': self.referrer}
+                                files=files, headers={'Referer': self.referrer},
+                                timeout=10
                             )
 
                             print 'Update HTTP result: %d' % r.status_code
@@ -548,7 +558,8 @@ class DscServerUtils:
                             # check if the update successfully updated database
                             r = self.client.get(
                                 SERVER_LIST_URL + ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', '')),
-                                headers={'Referer': self.referrer}
+                                headers={'Referer': self.referrer},
+                                timeout=10
                             )
                             self.referrer = SERVER_LIST_URL + ds.get(
                                 'repository_url',
@@ -589,7 +600,8 @@ class DscServerUtils:
                         # load update form
                         self.client.get(
                             SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                            headers={'Referer': self.referrer}
+                            headers={'Referer': self.referrer},
+                            timeout=10
                         )
                         self.referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
                         self.csrftoken = self.client.cookies['csrftoken']
@@ -606,7 +618,8 @@ class DscServerUtils:
 
                         r = self.client.post(
                             SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                            data=data_to_send, headers={'Referer': self.referrer}
+                            data=data_to_send, headers={'Referer': self.referrer},
+                            timeout=10
                         )
                         print 'Update result: %d' % r.status_code
                         xmi_updated += 1
