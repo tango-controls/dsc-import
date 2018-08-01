@@ -75,7 +75,32 @@ JAVA_DS_COMMAND_DATATYPES = {
 }
 JAVA_DS_COMMAND_DATATYPES_REVERS = {v: k for k, v in JAVA_DS_COMMAND_DATATYPES.items() }
 
+# TODO: provide python-pogo command data type matches
+PYTHON_DS_COMMAND_DATATYPES = {
+    'boolean': 'BooleanType',
+    'float': 'FloatType',
+    'double': 'DoubleType',
+    'int': 'IntType',
+    'long': 'LongType',
+    'short': 'ShortType',
+    'String': 'StringType',
+    'byte': 'UCharType',
+    'byte[]': 'CharArrayType',
+    'double[]': 'DoubleArrayType',
+    'DevVarDoubleStringArray': 'DoubleStringArrayType',
+    'float[]': 'FloatArrayType',
+    'long[]': 'LongArrayType',
+    'DevVarLongStringArray': 'LongStringArrayType',
+    'short[]': 'ShortArrayType',
+    'String[]': 'StringArrayType',
+    'void': 'VoidType',
+    'ConstStringType': 'ConstDevString',
+    'DevState':'StateType',
+    'DeviceState': 'StateType',
+    'DevEncoded': 'EncodedType',
+}
 
+PYTHON_DS_COMMAND_DATATYPES_REVERS = {v: k for k, v in PYTHON_DS_COMMAND_DATATYPES.items() }
 
 
 DS_ATTRIBUTE_DATATYPES = {
@@ -138,6 +163,25 @@ JAVA_DS_ATTRIBUTE_DATATYPES = {
     'Enum[][]': ['EnumType', 'Image'],
     
 }
+# TODO: provide python-pogo attribute data type matches
+PYTHON_DS_ATTRIBUTE_DATATYPES = {
+    'BooleanType': 'DevBoolean',
+    'FloatType': 'DevFloat',
+    'DoubleType': 'DevDouble',
+    'IntType': 'DevLong',
+    'LongType': 'DevLong64',
+    'ShortType': 'DevShort',
+    'StringType': 'DevString',
+    'UIntType': 'DevULong',
+    'ULongType': 'DevULong64',
+    'UShortType': 'DevUShort',
+    'UCharType': 'DevUChar',
+    'CharType': 'DevChar',
+    'EncodedType': 'DevEncoded',
+    'StateType': 'DevState'
+}
+
+PYTHON_DS_ATTRIBUTE_DATATYPES_REVERS = {v: k for k, v in PYTHON_DS_ATTRIBUTE_DATATYPES.items() }
 
 DS_PROPERTIES_DATATYPES = {
     'BooleanType': 'DevBoolean',
