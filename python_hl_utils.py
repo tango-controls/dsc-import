@@ -29,6 +29,10 @@ REGEX_DEVICE_CLASS = re.compile(r"class\s+(?P<class_name>\w+)\s*[(]\s*((tango.)|
 
 REGEX_ATTR_START = re.compile(r"\s*(?P<attr_name>\w+)\s*=\s*attribute\s*[(]")
 
+REGEX_CMD_START = re.compile(r"\s*@command\s*[(]")
+
+REGEX_METHOD_START = re.compile(r"\s*def\s*(?P<name>\w+)")
+
 # matches of python hl datatypes to tango types
 PYTHON_HL_DATATYPES = {
 "None": "DevVoid",
@@ -135,15 +139,13 @@ PYTHON_HL_DATATYPES = {
 def get_attribute_xml(source_lines, start_index, name, class_xml):
     """
     Generate attribute related xml element
-    :param source_lines:
-    :param start_index:
-    :param class_xml:
-    :return: (attribute_xml, end_index) where attribute_xml is a return node and end_index is line number where
+    :param source_lines: lines to be parsed
+    :param start_index: index of the line where parsing should start
+    :param name: attribute name
+    :param class_xml: parent xml node of the attribute
+    :return: (attribute_xml, end_index) where attribute_xml is an xml node and end_index is line number where
              attribute definition ends
     """
-
-
-
     # prepare xml element
     attribute_xml = etree.SubElement(class_xml, 'attributes')
     attribute_xml.set('name', name)
@@ -163,7 +165,8 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
 
         # strip the first line from  '.. = attribute('
         if index == start_index:
-            line = REGEX_ATTR_START.sub("", line)
+            line = REGEX_ATTR_START.sub('', line)
+            line = line.replace('@attribute(', '')
 
         # check for data type
         dtype_image_match = re.search(
@@ -240,14 +243,15 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
             attribute_xml.set('maxY'.max_y_match.group('max_dim_y'))
             
         # check for descritpion
-        description_match = re.search(r"""doc\s*=\s*["](?P<description>.+?)["]""", line)
+        description_match = re.search(r"""((doc)|(description))\s*=\s*["](?P<description>.+?)["]""", line)
         
         # try different possible patterns
         if description_match is None:
-            description_match = re.search(r"""doc\s*=\s*['](?P<description>.+?)[']""", line)
+            description_match = re.search(r"""((doc)|(description))\s*=\s*['](?P<description>.+?)[']""", line)
         
         if description_match is None:
-            description_match = re.search(r"""doc\s*=\s*["]["]["](?P<description>.+?)["]["]["]""", line)
+            description_match = re.search(r"""((doc)|(description))\s*=\s*["]["]["](?P<description>.+?)["]["]["]""",
+                                          line)
             
         if description_match is not None:
             attribute_xml.set('description', description_match.group('description'))
@@ -271,6 +275,53 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
     return attribute_xml, index
 
 
+def get_command_xml(source_lines, start_index, name, class_xml):
+    """
+    Generate command related xml element
+    :param source_lines: lines to be parsed
+    :param start_index: index of the line where parsing should start
+    :param name: command name
+    :param class_xml: parent xml node of the command
+    :return: (command_xml, end_index) where command_xml is an xml node and end_index is line number where
+             command definition ends
+    """
+
+    # prepare xml element
+    command_xml = etree.SubElement(class_xml, 'commands')
+    command_xml.set('name', name)
+
+    argin_xml = etree.SubElement(command_xml, 'argin')
+    argout_xml = etree.SubElement(command_xml, 'argout')
+
+    # find content of the attrib definition (part between brackets)
+    no_brackets_open = 0  # this will count 'internal' brackets (one which belongs to attributes properties)
+
+    # loop over lines belonging to attribute definition
+    index = start_index
+
+    while index < len(source_lines):
+
+        line = source_lines[index]
+        assert isinstance(line, str)
+
+        # for the first line remove '@command' part
+        if index == start_index:
+            line = line.replace("@command(", "").replace("@command", "")
+
+        # TODO: parse for command declaration elements
+
+
+        # check for attribute definition end
+        no_brackets_open += line.count('(') - line.count(')')
+        # definition ends when there is not matched close bracket
+        if no_brackets_open < 0:
+            break
+
+        index += 1
+
+    return command_xml, index
+
+
 def get_class_xml(source_lines, name, xmi_xml):
     """
     Generates class relate xml element form lines selected
@@ -280,6 +331,7 @@ def get_class_xml(source_lines, name, xmi_xml):
     :param xmi_xml:
     :return:
     """
+
     classes_xml = etree.SubElement(xmi_xml, 'classes')
     classes_xml.set('name', name)
     description_xml = etree.SubElement(classes_xml, 'description')
@@ -290,12 +342,38 @@ def get_class_xml(source_lines, name, xmi_xml):
     while index < len(source_lines):
 
         line = source_lines[index]
+        assert isinstance(line, str)
 
-        # look for attribute definition
-        attr_mo = REGEX_ATTR_START.match(line)
+        # look for attribute declarations
+        attr_mo = REGEX_ATTR_START.search(line)
         if attr_mo is not None:
             (attr_xml, end_index) = get_attribute_xml(source_lines, index, attr_mo.gropup('attr_name'), classes_xml)
             index = end_index
+
+        elif line.strip().startswith('@attribute('):
+            # search for name
+            tmp_index = index + 1
+            attr_name_match = None
+            while tmp_index < len(source_lines) and attr_name_match is None:
+                attr_name_match = REGEX_METHOD_START.search(source_lines[tmp_index])
+                if attr_name_match is not None:
+                    (attr_xml, end_index) = get_attribute_xml(source_lines, index, attr_name_match.gropup('name'),
+                                                              classes_xml)
+                    index = end_index
+
+        # look for command declarations
+        if line.strip().startswith('@command'):
+            tmp_index = index + 1
+            cmd_name_match = None
+            while tmp_index < len(source_lines) and cmd_name_match is None:
+                cmd_name_match = REGEX_METHOD_START.search(source_lines[tmp_index])
+                if cmd_name_match is not None:
+                    (cmd_xml, end_index) = get_command_xml(source_lines, index, cmd_name_match.gropup('name'),
+                                                              classes_xml)
+                    index = end_index
+
+
+
 
 
         # TODO: commands, pipes, class and device properties
