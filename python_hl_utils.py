@@ -29,9 +29,112 @@ REGEX_DEVICE_CLASS = re.compile(r"class\s+(?P<class_name>\w+)\s*[(]\s*((tango.)|
 
 REGEX_ATTR_START = re.compile(r"\s*(?P<attr_name>\w+)\s*=\s*attribute\s*[(]")
 
+# matches of python hl datatypes to tango types
+PYTHON_HL_DATATYPES = {
+"None": "DevVoid",
+"'None'": "DevVoid",
+"DevVoid": "DevVoid",
+"'DevVoid'": "DevVoid",
+"DevState": "DevState",
+"'DevState'": "DevState",
+"bool": "DevBoolean",
+"'bool'": "DevBoolean",
+"'boolean'": "DevBoolean",
+"DevBoolean": "DevBoolean",
+"'DevBoolean'": "DevBoolean",
+"numpy.bool_": "DevBoolean",
+"'char'": "DevUChar",
+"'chr'": "DevUChar",
+"'byte'": "DevUChar",
+"chr": "DevUChar",
+"DevUChar": "DevUChar",
+"'DevUChar'": "DevUChar",
+"numpy.uint8": "DevUChar",
+"'int16'": "DevShort",
+"DevShort": "DevShort",
+"'DevShort'": "DevShort",
+"numpy.int16": "DevShort",
+"'uint16'": "DevUShort",
+"DevUShort": "DevUShort",
+"'DevUShort'": "DevUShort",
+"numpy.uint16": "DevUShort",
+"int": "DevLong",
+"'int'": "DevLong",
+"'int32'": "DevLong",
+"DevLong": "DevLong",
+"'DevLong'": "DevLong",
+"numpy.int32": "DevLong",
+"'uint'": "DevULong",
+"'uint32'": "DevULong",
+"DevULong": "DevULong",
+"'DevULong'": "DevULong",
+"numpy.uint32": "DevULong",
+"'int64'": "DevLong64",
+"DevLong64": "DevLong64",
+"'DevLong64'": "DevLong64",
+"numpy.int64": "DevLong64",
+"'uint64'": "DevULong64",
+"DevULong64": "DevULong64",
+"'DevULong64'": "DevULong64",
+"numpy.uint64": "DevULong64",
+"DevInt": "DevInt",
+"'DevInt'": "DevInt",
+"'float32'": "DevFloat",
+"DevFloat": "DevFloat",
+"'DevFloat'": "DevFloat",
+"numpy.float32": "DevFloat",
+"float": "DevDouble",
+"'double'": "DevDouble",
+"'float'": "DevDouble",
+"'float64'": "DevDouble",
+"DevDouble": "DevDouble",
+"'DevDouble'": "DevDouble",
+"numpy.float64": "DevDouble",
+"str": "DevString",
+"'str'": "DevString",
+"'string'": "DevString",
+"'text'": "DevString",
+"DevString": "DevString",
+"'DevString'": "DevString",
+"bytearray": "DevEncoded",
+"'bytearray'": "DevEncoded",
+"'bytes'": "DevEncoded",
+"DevEncoded": "DevEncoded",
+"'DevEncoded'": "DevEncoded",
+"DevVarBooleanArray": "DevVarBooleanArray",
+"'DevVarBooleanArray'": "DevVarBooleanArray",
+"DevVarCharArray": "DevVarCharArray",
+"'DevVarCharArray'": "DevVarCharArray",
+"DevVarShortArray": "DevVarShortArray",
+"'DevVarShortArray'": "DevVarShortArray",
+"DevVarLongArray": "DevVarLongArray",
+"'DevVarLongArray'": "DevVarLongArray",
+"DevVarLong64Array": "DevVarLong64Array",
+"'DevVarLong64Array'": "DevVarLong64Array",
+"DevVarULong64Array": "DevVarULong64Array",
+"'DevVarULong64Array'": "DevVarULong64Array",
+"DevVarFloatArray": "DevVarFloatArray",
+"'DevVarFloatArray'": "DevVarFloatArray",
+"DevVarDoubleArray": "DevVarDoubleArray",
+"'DevVarDoubleArray'": "DevVarDoubleArray",
+"DevVarUShortArray": "DevVarUShortArray",
+"'DevVarUShortArray'": "DevVarUShortArray",
+"DevVarULongArray": "DevVarULongArray",
+"'DevVarULongArray'": "DevVarULongArray",
+"DevVarStringArray": "DevVarStringArray",
+"'DevVarStringArray'": "DevVarStringArray",
+"DevVarLongStringArray": "DevVarLongStringArray",
+"'DevVarLongStringArray'": "DevVarLongStringArray",
+"DevVarDoubleStringArray": "DevVarDoubleStringArray",
+"'DevVarDoubleStringArray'": "DevVarDoubleStringArray",
+"DevPipeBlob": "DevPipeBlob",
+"'DevPipeBlob'": "DevPipeBlob",
+}
+
+
 def get_attribute_xml(source_lines, start_index, name, class_xml):
     """
-    Generate attri
+    Generate attribute related xml element
     :param source_lines:
     :param start_index:
     :param class_xml:
@@ -44,9 +147,8 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
     # prepare xml element
     attribute_xml = etree.SubElement(class_xml, 'attributes')
     attribute_xml.set('name', name)
-
-    # TODO: implement parsing for attribute
-
+    
+    attribute_properties_xml = etree.SubElement(attribute_xml, 'properties')
 
     # find content of the attrib definition (part between brackets)
     no_brackets_open = 0 # this will count 'internal' brackets (one which belongs to attributes properties)
@@ -64,11 +166,14 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
             line = REGEX_ATTR_START.sub("", line)
 
         # check for data type
-        dtype_image_match = re.match(r"""dtype\s*=\s*[[(]\s*[([]\s*['"](P<dtype>\w+)['"]\s*,?\s*[)\]]\s*,?\s*[)\]]""")
+        dtype_image_match = re.search(
+            r"""\s*dtype\s*=\s*[[(]\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]\s*,?\s*[)\]]""",
+            line
+        )
 
-        dtype_spectrum_match = re.match(r"""dtype\s*=\s*[([]\s*['"](P<dtype>\w+)['"]\s*,?\s*[)\]]""")
+        dtype_spectrum_match = re.search(r"""\s*dtype\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""", line)
 
-        dtype_scalar_match = re.match(r"""dtype\s*=\s*['"](P<dtype>\w+)['"]""")
+        dtype_scalar_match = re.search(r"""\s*dtype\s*=\s*['"]?(?P<dtype>\w+)['"]?""", line)
 
         if dtype_image_match is not None:
             etree.SubElement(
@@ -76,7 +181,10 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
                 'dataType',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
-                        'pogoDsl:' + PYTHON_DS_ATTRIBUTE_DATATYPES.get(dtype_image_match.group('dtype'), "StringType")
+                        'pogoDsl:' + DS_ATTRIBUTE_DATATYPES_REVERS.get(
+                            PYTHON_HL_DATATYPES.get(dtype_image_match.group('dtype'), 'DevEnum'),
+                            'EnumType'
+                        )
                 }
             )
 
@@ -88,7 +196,10 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
                 'dataType',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
-                        'pogoDsl:' + PYTHON_DS_ATTRIBUTE_DATATYPES.get(dtype_spectrum_match.group('dtype'), "StringType")
+                        'pogoDsl:' + DS_ATTRIBUTE_DATATYPES_REVERS.get(
+                            PYTHON_HL_DATATYPES.get(dtype_spectrum_match.group('dtype'), 'DevEnum'),
+                            'EnumType'
+                        )
                 }
             )
 
@@ -100,14 +211,55 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
                 'dataType',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
-                        'pogoDsl:' + PYTHON_DS_ATTRIBUTE_DATATYPES.get(dtype_scalar_match.group('dtype'), "StringType")
+                        'pogoDsl:' + DS_ATTRIBUTE_DATATYPES_REVERS.get(
+                            PYTHON_HL_DATATYPES.get(dtype_scalar_match.group('dtype'), 'DevEnum'),
+                            'EnumType'
+                        )
                 }
             )
 
             attribute_xml.set('attType', 'Scalar')
 
-        # check for
+        # check for access type
+        access_match = re.search(r"""access\s*=\s*(AttrWriteType.)?(?P<access>\w+)""", line)        
+        if access_match is not None:
+            attribute_xml.set('rwType', access_match.group('access'))
+            
+        # check for display level        
+        visibility_match = re.search(r"""display_level\s*=\s*(DispLevel.)?(?P<display_level>\w+)""", line)        
+        if visibility_match is not None:
+            attribute_xml.set('displayLevel', visibility_match.group('display_level'))
+            
+        # check for dimensions
+        max_x_match = re.search(r"""max_dim_x\s*=\s*(?P<max_dim_x>\d+)""", line)        
+        if max_x_match is not None:
+            attribute_xml.set('maxX'. max_x_match.group('max_dim_x'))
 
+        max_y_match = re.search(r"""max_dim_y\s*=\s*(?P<max_dim_y>\d+)""", line)
+        if max_y_match is not None:
+            attribute_xml.set('maxY'.max_y_match.group('max_dim_y'))
+            
+        # check for descritpion
+        description_match = re.search(r"""doc\s*=\s*["](?P<description>.+?)["]""", line)
+        
+        # try different possible patterns
+        if description_match is None:
+            description_match = re.search(r"""doc\s*=\s*['](?P<description>.+?)[']""", line)
+        
+        if description_match is None:
+            description_match = re.search(r"""doc\s*=\s*["]["]["](?P<description>.+?)["]["]["]""", line)
+            
+        if description_match is not None:
+            attribute_xml.set('description', description_match.group('description'))
+            attribute_properties_xml.set('description', description_match.group('description'))
+            
+        # check for label
+        label_match = re.search(r"""label\s*=\s*['"](?P<label>\w+)['"]""", line)
+        if label_match is not None:
+            attribute_properties_xml.set('label', label_match.group('label'))
+            
+        # TODO: pars for other attribute properties    
+            
         # check for attribute definition end
         no_brackets_open += line.count('(') - line.count(')')
         # definition ends when there is not matched close bracket
@@ -116,7 +268,8 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
 
         index += 1
 
-    return attribute_xml, 0
+    return attribute_xml, index
+
 
 def get_class_xml(source_lines, name, xmi_xml):
     """
@@ -209,5 +362,7 @@ def get_xmi_from_python_hl(name, family, python_file_url, element = None):
             if mo is not None:
                 # if not device class
                 classes_xml = get_class_content(source_lines, mo.group('class_name'), xmi_xml)
+                
+    return xmi_xml
 
 
