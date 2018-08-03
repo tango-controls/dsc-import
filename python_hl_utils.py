@@ -310,8 +310,44 @@ def get_command_xml(source_lines, start_index, name, class_xml):
 
         # TODO: parse for command declaration elements
 
+        # look for input argument data type
+        dtype_in_spectrum_match = re.search(r"""\s*dtype_in\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""", line)
 
-        # check for attribute definition end
+        dtype_in_scalar_match = re.search(r"""\s*dtype_in\s*=\s*['"]?(?P<dtype>\w+)['"]?""", line)
+
+        if dtype_in_spectrum_match is not None:
+            # vector/spectrum argument has 'DevVar' in the name
+            etree.SubElement(
+                argin_xml,
+                'dataType',
+                attrib={
+                    etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                        'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
+                            str(PYTHON_HL_DATATYPES.get(dtype_in_spectrum_match.group('dtype'), 'DevString')).replace('Dev', 'DevVar'),
+                            'DevVarString'
+                        )
+                }
+            )
+        elif dtype_in_scalar_match is not None:
+            etree.SubElement(
+                argin_xml,
+                'dataType',
+                attrib={
+                    etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                        'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
+                            str(PYTHON_HL_DATATYPES.get(dtype_in_spectrum_match.group('dtype'), 'DevString')),
+                            'DevVarString'
+                        )
+                }
+            )
+
+        # look for input argument description
+
+
+
+
+
+        # check for command definition end
         no_brackets_open += line.count('(') - line.count(')')
         # definition ends when there is not matched close bracket
         if no_brackets_open < 0:
