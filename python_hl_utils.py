@@ -23,6 +23,7 @@ from lxml import etree
 
 from xmi_utils import *
 from python_utils import get_class_content
+from s2i_utils import key_value_search
 
 # regular experssions to detect various components
 REGEX_DEVICE_CLASS = re.compile(r"class\s+(?P<class_name>\w+)\s*[(]\s*((tango.)|(PyTango.))*Device\s*[)]")
@@ -342,6 +343,10 @@ def get_command_xml(source_lines, start_index, name, class_xml):
             )
 
         # look for input argument description
+
+
+
+        doc_in_match = re.search(r"""\s*dtype_in\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""", line)
 
 
 
