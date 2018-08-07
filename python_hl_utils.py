@@ -309,8 +309,6 @@ def get_command_xml(source_lines, start_index, name, class_xml):
         if index == start_index:
             line = line.replace("@command(", "").replace("@command", "")
 
-        # TODO: parse for command declaration elements
-
         # look for input argument data type
         dtype_in_spectrum_match = re.search(r"""\s*dtype_in\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""", line)
 
@@ -342,15 +340,63 @@ def get_command_xml(source_lines, start_index, name, class_xml):
                 }
             )
 
-        # look for input argument description
+        # look for output argument data type
+        dtype_out_spectrum_match = re.search(r"""\s*dtype_out\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""",
+                                            line)
 
+        dtype_out_scalar_match = re.search(r"""\s*dtype_out\s*=\s*['"]?(?P<dtype>\w+)['"]?""", line)
 
+        if dtype_out_spectrum_match is not None:
+            # vector/spectrum argument has 'DevVar' in the name
+            etree.SubElement(
+                argin_xml,
+                'dataType',
+                attrib={
+                    etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                        'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
+                            str(PYTHON_HL_DATATYPES.get(dtype_out_spectrum_match.group('dtype'),
+                                                        'DevString')).replace('Dev', 'DevVar'),
+                            'DevVarString'
+                        )
+                }
+            )
+        elif dtype_out_scalar_match is not None:
+            etree.SubElement(
+                argin_xml,
+                'dataType',
+                attrib={
+                    etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                        'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
+                            str(PYTHON_HL_DATATYPES.get(dtype_out_spectrum_match.group('dtype'), 'DevString')),
+                            'DevVarString'
+                        )
+                }
+            )
+        
+        # look for other keys
+        cmd_values = key_value_search(
+            ['doc_in', 'doc_out', 'display_level', 'polling_period', 'green_mode'],
+            line
+        )
 
-        doc_in_match = re.search(r"""\s*dtype_in\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""", line)
+        # input argument description
+        if len(cmd_values.get('doc_in', '')) > 0:
+            argin_xml.set('description', cmd_values['doc_in'])
 
+        # output description
+        if len(cmd_values.get('doc_out', '')) > 0:
+            argout_xml.set('description', cmd_values['doc_out'])
 
+        # polling period
+        if len(cmd_values.get('polling_period', '')) > 0:
+            argin_xml.set('polledPeriod', cmd_values['polling_period'])
 
-
+        # display level
+        if len(cmd_values.get('display_level', '')) > 0:
+            argin_xml.set(
+                'displayLevel',
+                cmd_values['display_level'].replace('PyTango.', '').replace('DispLevel.', '').replace('tango', '')
+            )
 
         # check for command definition end
         no_brackets_open += line.count('(') - line.count(')')
