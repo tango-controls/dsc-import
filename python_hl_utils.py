@@ -237,7 +237,7 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
         if visibility_match is not None:
             attribute_xml.set(
                 'displayLevel',
-                visibility_match.group('display_level').replace('PyTango.', '').
+                visibility_match.group('display_level')
             )
             
         # check for dimensions
@@ -475,8 +475,8 @@ def get_pipe_xml(source_lines, start_index, name, class_xml):
         # display level
         if len(pipe_values.get('display_level', '')) > 0:
             pipe_xml.set(
-                'dispLevel',
-                pipe_values['displayLevel'].replace('PyTango.', '').replace('tango.', ' ').replace('DispLevel.', '')
+                'displayLevel',
+                pipe_values['display_level'].replace('PyTango.', '').replace('tango.', ' ').replace('DispLevel.', '')
             )
 
         # access
