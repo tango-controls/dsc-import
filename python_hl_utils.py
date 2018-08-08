@@ -30,9 +30,11 @@ REGEX_DEVICE_CLASS = re.compile(r"class\s+(?P<class_name>\w+)\s*[(]\s*((tango.)|
 
 REGEX_ATTR_START = re.compile(r"\s*(?P<attr_name>\w+)\s*=\s*attribute\s*[(]")
 
-REGEX_CMD_START = re.compile(r"\s*@command\s*[(]")
+REGEX_CMD_START = re.compile(r"\s*@command\s*[(]?")
 
 REGEX_METHOD_START = re.compile(r"\s*def\s*(?P<name>\w+)")
+
+REGEX_PIPE_START = re.compile(r"\s*(?P<pipe_name>\w+)\s*=\s*pipe\s*[(]?")
 
 # matches of python hl datatypes to tango types
 PYTHON_HL_DATATYPES = {
@@ -225,14 +227,18 @@ def get_attribute_xml(source_lines, start_index, name, class_xml):
             attribute_xml.set('attType', 'Scalar')
 
         # check for access type
-        access_match = re.search(r"""access\s*=\s*(AttrWriteType.)?(?P<access>\w+)""", line)        
+        access_match = re.search(r"""access\s*=\s*(PyTango.)?(tango.)?(AttrWriteType.)?(?P<access>\w+)""", line)
         if access_match is not None:
             attribute_xml.set('rwType', access_match.group('access'))
             
         # check for display level        
-        visibility_match = re.search(r"""display_level\s*=\s*(DispLevel.)?(?P<display_level>\w+)""", line)        
+        visibility_match = re.search(r"""display_level\s*=\s*(PyTango.)?(tango.)?(DispLevel.)?(?P<display_level>\w+)""",
+                                     line)
         if visibility_match is not None:
-            attribute_xml.set('displayLevel', visibility_match.group('display_level'))
+            attribute_xml.set(
+                'displayLevel',
+                visibility_match.group('display_level').replace('PyTango.', '').
+            )
             
         # check for dimensions
         max_x_match = re.search(r"""max_dim_x\s*=\s*(?P<max_dim_x>\d+)""", line)        
@@ -307,7 +313,11 @@ def get_command_xml(source_lines, start_index, name, class_xml):
 
         # for the first line remove '@command' part
         if index == start_index:
-            line = line.replace("@command(", "").replace("@command", "")
+            if line.strip() == '@command':
+                # if there is no command attrib available there is no point to parse them
+                break
+
+            line = line.replace("@command(", "")
 
         # look for input argument data type
         dtype_in_spectrum_match = re.search(r"""\s*dtype_in\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""", line)
@@ -342,7 +352,7 @@ def get_command_xml(source_lines, start_index, name, class_xml):
 
         # look for output argument data type
         dtype_out_spectrum_match = re.search(r"""\s*dtype_out\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""",
-                                            line)
+                                             line)
 
         dtype_out_scalar_match = re.search(r"""\s*dtype_out\s*=\s*['"]?(?P<dtype>\w+)['"]?""", line)
 
@@ -395,7 +405,7 @@ def get_command_xml(source_lines, start_index, name, class_xml):
         if len(cmd_values.get('display_level', '')) > 0:
             argin_xml.set(
                 'displayLevel',
-                cmd_values['display_level'].replace('PyTango.', '').replace('DispLevel.', '').replace('tango', '')
+                cmd_values['display_level'].replace('PyTango.', '').replace('DispLevel.', '').replace('tango.', '')
             )
 
         # check for command definition end
@@ -409,9 +419,87 @@ def get_command_xml(source_lines, start_index, name, class_xml):
     return command_xml, index
 
 
-def get_class_xml(source_lines, name, xmi_xml):
+def get_pipe_xml(source_lines, start_index, name, class_xml):
     """
-    Generates class relate xml element form lines selected
+    Generate pipe related xml element
+    :param source_lines: lines to be parsed
+    :param start_index: index of the line where parsing should start
+    :param name: pipe name
+    :param class_xml: parent xml node of the command
+    :return: (pipe_xml, end_index) where pipe_xml is an xml node and end_index is line number where
+             pipe definition ends
+    """
+
+    # prepare xml element
+    pipe_xml = etree.SubElement(class_xml, 'commands')
+    pipe_xml.set('name', name)
+
+    # find content of the attrib definition (part between brackets)
+    no_brackets_open = 0  # this will count 'internal' brackets (one which belongs to attributes properties)
+
+    # loop over lines belonging to attribute definition
+    index = start_index
+
+    while index < len(source_lines):
+
+        line = source_lines[index]
+        assert isinstance(line, str)
+
+        # for the first line remove '@pipe(' part
+        if index == start_index:
+            if line.strip() == '@pipe':
+                # if there is no pipe attributes available there is no need to parse it
+                break;
+
+            line = REGEX_PIPE_START.sub('', line)
+            line = line.replace("@pipe(", "")
+
+        # look keys' values
+        pipe_values = key_value_search(
+            ['name', 'doc', 'description', 'display_level', 'access', 'label'],
+            line
+        )
+
+        # name
+        if len(pipe_values.get('name', '')) > 0:
+            pipe_xml.set('name', pipe_values['name'])
+
+        # description
+        if len(pipe_values.get('description', pipe_values.get('doc', ''))) > 0:
+            pipe_xml.set('description', pipe_values.get('description', pipe_values.get('doc', '')))
+
+        # label
+        if len(pipe_values.get('label', '')) > 0:
+            pipe_xml.set('label', pipe_values['label'])
+
+        # display level
+        if len(pipe_values.get('display_level', '')) > 0:
+            pipe_xml.set(
+                'dispLevel',
+                pipe_values['displayLevel'].replace('PyTango.', '').replace('tango.', ' ').replace('DispLevel.', '')
+            )
+
+        # access
+        if len(pipe_values.get('access', '')) > 0:
+            pipe_xml.set(
+                'rwType',
+                pipe_values['access'].replace('PyTango.', '').replace('tango.', '').replace('AttrWriteType.', '')
+            )
+
+        # check for pipe definition end
+        no_brackets_open += line.count('(') - line.count(')')
+        # definition ends when there is not matched close bracket
+        if no_brackets_open < 0 or REGEX_METHOD_START:
+            break
+
+        index += 1
+
+    return pipe_xml, index
+
+
+def get_class_xml(source_lines, name, xmi_xml, meta_data={}):
+    """
+    Generates class relate xml element from selected lines
 
     :param source_lines:
     :param name:
@@ -459,12 +547,23 @@ def get_class_xml(source_lines, name, xmi_xml):
                                                               classes_xml)
                     index = end_index
 
+        # look for pipes declarations
+        pipe_mo = REGEX_PIPE_START.search(line)
+        if pipe_mo is not None:
+            (pipe_xml, end_index) = get_pipe_xml(source_lines, index, attr_mo.gropup('pipe_name'), classes_xml)
+            index = end_index
 
+        elif line.strip().startswith('@pipe'):
+            tmp_index = index + 1
+            pipe_name_match = None
+            while tmp_index < len(source_lines) and pipe_name_match is None:
+                pipe_name_match = REGEX_METHOD_START.search(source_lines[tmp_index])
+                if pipe_name_match is not None:
+                    (pipe, end_index) = get_pipe_xml(source_lines, index, attr_name_match.gropup('name'),
+                                                              classes_xml)
+                    index = end_index
 
-
-
-        # TODO: commands, pipes, class and device properties
-
+        # TODO: class and device properties
 
         # increment index
         index += 1
@@ -472,13 +571,15 @@ def get_class_xml(source_lines, name, xmi_xml):
     return classes_xml
 
 
-def get_xmi_from_python_hl(name, family, python_file_url, element = None):
+def get_xmi_from_python_hl(name, family, python_file_url, element = None, meta_data={}):
     """
     Generates xmi file content from a parsed Python HL device server
 
     :param name: name of the device server
     :param family: family name
     :param python_file_url: URL of the python file
+    :param element:
+    :param meta_data: additional info to be included in class info
     :return: content of xmi file derived from the python source
     """
 
