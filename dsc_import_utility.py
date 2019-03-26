@@ -35,9 +35,17 @@ arguments = argparse.ArgumentParser(description="This script batch imports devic
 arguments.add_argument("--csv-file", dest='csv_file', default=None, help="If provided the script will parse the CSV_FILE instead "
                                                            "of an SVN repository defined in settings.py.", )
 
+arguments.add_argument(
+    "--use-env",
+    dest='use_env',
+    action='store_true',
+    help="If provided the script will use environment variables (see README) to find information about a device class"
+         "to import or update in the catalogue"
+)
+
 args = arguments.parse_args()
 
-print "You are going to update a device servers catalogue info on the server: %s" % SERVER_BASE_URL
+print("You are going to update a device servers catalogue info on the server: %s" % SERVER_BASE_URL)
 
 # login to server
 if USER_LOGIN is None or USER_PASSWORD is None:
@@ -72,6 +80,8 @@ if args.csv_file is None:
     print 'Getting a list of device server in the repository...'
     repo = svn.remote.RemoteClient(LOCAL_REPO_URL)
     ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 15)
+
+elif args.use_env:
 
 else:
     # if SV file provided the list is built according to it
