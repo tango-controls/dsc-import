@@ -36,6 +36,10 @@ REGEX_METHOD_START = re.compile(r"\s*def\s*(?P<name>\w+)")
 
 REGEX_PIPE_START = re.compile(r"\s*(?P<pipe_name>\w+)\s*=\s*pipe\s*[(]?")
 
+REGEX_CLASS_PROPERTY_START = re.compile(r"\s*(?P<property_name>\w+)\s*=\s*class_property\s*[(]")
+
+REGEX_DEVICE_PROPERTY_START = re.compile(r"\s*(?P<property_name>\w+)\s*=\s*device_property\s*[(]")
+
 # matches of python hl datatypes to tango types
 PYTHON_HL_DATATYPES = {
 "None": "DevVoid",
@@ -495,6 +499,129 @@ def get_pipe_xml(source_lines, start_index, name, class_xml):
         index += 1
 
     return pipe_xml, index
+
+
+def get_property_xml(source_lines, start_index, name, class_xml, subelement_type='deviceProperties'):
+    """
+    Generate property related xml element
+    
+    :param source_lines: lines to be parsed
+    :param start_index: index of the line where parsing should start
+    :param name: attribute name
+    :param class_xml: parent xml node of the attribute
+    :param subelement_type: type of element tyle (classProperties or deviceProperties)
+    :return: (propertye_xml, end_index) where property_xml is an xml node and end_index is line number where
+             property definition ends
+    """
+
+    # prepare xml element
+    property_xml = etree.SubElement(class_xml, subelement_type)
+    property_xml.set('name', name)
+
+    # find content of the attrib definition (part between brackets)
+    no_brackets_open = 0  # this will count 'internal' brackets (one which belongs to attributes properties)
+
+    # loop over lines belonging to attribute definition
+    index = start_index
+
+    while index < len(source_lines):
+
+        line = source_lines[index]
+        assert isinstance(line, str)
+
+        # strip the first line from  '.. = class/device_property('
+        if index == start_index:
+            line = REGEX_CLASS_PROPERTY_START.sub('', line)
+            line = REGEX_DEVICE_PROPERTY_START.sub('', line)
+
+        # check for data type
+        dtype_spectrum_match = re.search(r"""\s*dtype\s*=\s*[([]\s*['"]?(?P<dtype>\w+)['"]?\s*,?\s*[)\]]""", line)
+
+        dtype_scalar_match = re.search(r"""\s*dtype\s*=\s*['"]?(?P<dtype>\w+)['"]?""", line)
+
+        if dtype_spectrum_match is not None:
+            etree.SubElement(
+                property_xml,
+                'dataType',
+                attrib={
+                    etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                        'pogoDsl:' + DS_ATTRIBUTE_DATATYPES_REVERS.get(
+                            PYTHON_HL_DATATYPES.get(dtype_spectrum_match.group('dtype'), 'DevString')
+                        )
+                }
+            )
+
+            property_xml.set('attType', 'Spectrum')
+
+        if dtype_scalar_match is not None:
+            etree.SubElement(
+                property_xml,
+                'dataType',
+                attrib={
+                    etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                        'pogoDsl:' + DS_ATTRIBUTE_DATATYPES_REVERS.get(
+                            PYTHON_HL_DATATYPES.get(dtype_scalar_match.group('dtype'), 'DevEnum'),
+                            'EnumType'
+                        )
+                }
+            )
+
+            property_xml.set('attType', 'Scalar')
+
+        # check for access type
+        access_match = re.search(r"""access\s*=\s*(PyTango.)?(tango.)?(AttrWriteType.)?(?P<access>\w+)""", line)
+        if access_match is not None:
+            property_xml.set('rwType', access_match.group('access'))
+
+        # check for display level        
+        visibility_match = re.search(r"""display_level\s*=\s*(PyTango.)?(tango.)?(DispLevel.)?(?P<display_level>\w+)""",
+                                     line)
+        if visibility_match is not None:
+            property_xml.set(
+                'displayLevel',
+                visibility_match.group('display_level')
+            )
+
+        # check for dimensions
+        max_x_match = re.search(r"""max_dim_x\s*=\s*(?P<max_dim_x>\d+)""", line)
+        if max_x_match is not None:
+            property_xml.set('maxX'.max_x_match.group('max_dim_x'))
+
+        max_y_match = re.search(r"""max_dim_y\s*=\s*(?P<max_dim_y>\d+)""", line)
+        if max_y_match is not None:
+            property_xml.set('maxY'.max_y_match.group('max_dim_y'))
+
+        # check for descritpion
+        description_match = re.search(r"""((doc)|(description))\s*=\s*["](?P<description>.+?)["]""", line)
+
+        # try different possible patterns
+        if description_match is None:
+            description_match = re.search(r"""((doc)|(description))\s*=\s*['](?P<description>.+?)[']""", line)
+
+        if description_match is None:
+            description_match = re.search(r"""((doc)|(description))\s*=\s*["]["]["](?P<description>.+?)["]["]["]""",
+                                          line)
+
+        if description_match is not None:
+            property_xml.set('description', description_match.group('description'))
+            attribute_properties_xml.set('description', description_match.group('description'))
+
+        # check for label
+        label_match = re.search(r"""label\s*=\s*['"](?P<label>\w+)['"]""", line)
+        if label_match is not None:
+            attribute_properties_xml.set('label', label_match.group('label'))
+
+        # TODO: pars for other attribute properties    
+
+        # check for attribute definition end
+        no_brackets_open += line.count('(') - line.count(')')
+        # definition ends when there is not matched close bracket
+        if no_brackets_open < 0:
+            break
+
+        index += 1
+
+    return property_xml, index
 
 
 def get_class_xml(source_lines, name, xmi_xml, meta_data={}):
