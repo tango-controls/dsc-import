@@ -280,7 +280,7 @@ class DscServerUtils:
                         # find class python file
                         if py_file['name'] in [ds_name + '.py', ds_name + '.PY']:
 
-                            print "Trying to generate an XMI from a %s file..." % py_file['name']
+                            print "Trying to generate an XMI from a %s file (as a PythonHl API)..." % py_file['name']
 
                             try:
                                 # get xmi if possible
