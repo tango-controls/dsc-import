@@ -34,7 +34,7 @@ def get_device_servers_list(csv_file_path):
         The first row defines columns' meaning and folowing rows provides content
         "name" - provides name of the device server
         "repository_url" - provides URL to repository (with path)
-        "repository_type" - provides type of repository
+        "repository_type" - provides type of repository, one of 'GIT', 'SVN', 'Mercurial', 'FTP', 'Other'
         "tag" - release tag
         "xmi_files_urls" - provides url (http://, https:// or file://) to an xmi file.
         "pogo_docs_url_base" - provides base url for pogo generated docs that may be parsed to get xmi file for non-xmi
@@ -48,6 +48,10 @@ def get_device_servers_list(csv_file_path):
         "documentation_title" - title of the document
         "documentation_type" - type of documentation, one of the following
                                ['README', 'Manual', 'InstGuide','Generated', 'SourceDoc']
+        "pogo_description_html" - name of pogo generated html file to be used for parsing instead of .xmi
+        "pogo_attributes_html" - name of pogo generated html file to be used for parsing instead of .xmi
+        "pogo_commands_html" - name of pogo generated html file to be used for parsing instead of .xmi
+        "pogo_properties_html" - name of pogo generated html file to be used for parsing instead of .xmi
 
 
     """
@@ -81,8 +85,13 @@ def get_device_servers_list(csv_file_path):
                     continue
 
                 ds['repository_type'] = row.get('repository_type', '')
-                if len(ds['repository_type'].strip()) == 0:
-                    ds['repository_type'] = 'SVN'
+                if ds['repository_type'].strip() not in ['GIT', 'SVN', 'Mercurial', 'FTP', 'Other']:
+                    if 'git' in ds['repository_url'].lower():
+                        ds['repository_type'] = 'GIT'
+                    elif 'svn' in ds['repository_url'].lower():
+                        ds['repository_type'] = 'SVN'
+                    else:
+                        ds['repository_type'] = 'Other'
 
                 if len(row.get('tag', '')) > 0:
                     ds['tag'] = row.get('tag', '')
@@ -93,7 +102,7 @@ def get_device_servers_list(csv_file_path):
                 if row.get('xmi_files_urls', '').startswith('['):
                     xmi_urls_list = eval(row.get('xmi_files_urls'))
                 elif len(row.get('xmi_files_urls', '')) > 0:
-                    xmi_urls_list[0] = row.get('xmi_files_urls')
+                    xmi_urls_list.append(row.get('xmi_files_urls'))
 
                 index = 0
                 for xmi_url in xmi_urls_list:
@@ -118,6 +127,10 @@ def get_device_servers_list(csv_file_path):
                 # for device servers featuring pogo documentation but no .xmi:
                 if len(row.get("pogo_docs_url_base", '')) > 0:
                     ds['pogo_docs_url_base'] = row.get("pogo_docs_url_base")
+                    ds['pogo_description_html'] = row.get('pogo_description_html', 'ClassDescription.html')
+                    ds['pogo_attributes_html'] = row.get('pogo_attributes_html', 'Attributes.html')
+                    ds['pogo_commands_html'] = row.get('pogo_commands_html', 'Commands.html')
+                    ds['pogo_properties_html'] = row.get('pogo_properties_html', 'Properties.html')
 
                 # process readme related columns
                 ds['readme_files'] = []

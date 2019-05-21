@@ -71,7 +71,7 @@ if args.csv_file is None:
 
     print 'Getting a list of device server in the repository...'
     repo = svn.remote.RemoteClient(LOCAL_REPO_URL)
-    ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 10)
+    ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 15)
 
 else:
     # if SV file provided the list is built according to it
@@ -81,6 +81,18 @@ else:
     ds_list = csv_utils.get_device_servers_list(args.csv_file)
 
 print 'Found %d device servers.' % len(ds_list)
+
+
+# apply exclude list
+for ds in ds_list[:]:
+    if os.path.basename(ds.get('path', ds.get('name', ''))) in EXCLUDE_LIST:
+        ds_list.remove(ds)
+
+# apply include only
+if len(INCLUDE_ONLY_LIST) > 0:
+    for ds in ds_list[:]:
+        if os.path.basename(ds.get('path', ds.get('name', ''))) not in INCLUDE_ONLY_LIST:
+            ds_list.remove(ds)
 
 # update the catalogue
 dsc_sever.update_catalogue(ds_list)

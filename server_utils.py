@@ -26,14 +26,10 @@ import re
 import urllib2
 import requests.auth
 
-
 from xmi_from_html import get_xmi_from_html
-
-
-
-from datetime import datetime
-from pytz import utc
-import requests
+import python_utils
+import python_hl_utils
+import java_utils
 
 from settings import *
 
@@ -67,13 +63,13 @@ class DscServerUtils:
             ba_password = getpass('Basic auth password: ')
             self.client.auth = requests.auth.HTTPBasicAuth(ba_login, ba_password)
 
-        self.client.get(SERVER_LOGIN_URL)
+        self.client.get(SERVER_LOGIN_URL, timeout=10)
 
         self.csrftoken = self.client.cookies['csrftoken']
         print self.csrftoken
 
         login_data = dict(login=login, password=password, csrfmiddlewaretoken=self.csrftoken)
-        r = self.client.post(SERVER_LOGIN_URL, data=login_data, headers={'Referer': SERVER_LOGIN_URL})
+        r = self.client.post(SERVER_LOGIN_URL, data=login_data, headers={'Referer': SERVER_LOGIN_URL}, timeout = 10)
         self.referrer = SERVER_LOGIN_URL
 
         if r.status_code != 200:
@@ -127,7 +123,7 @@ class DscServerUtils:
                         print "Class family from the path is %s." % family
 
                 # documentation
-                documentation_URL = ''
+                documentation_url = ''
                 documentation_title = ''
                 documentation_type = ''
                 documentation_pk = ''
@@ -135,12 +131,12 @@ class DscServerUtils:
 
                 if ADD_LINK_TO_DOCUMENTATION and ds.get('documentation_url', None) is None:
                     if family is not None:
-                        documentation_URL = DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/' + ds_name + '.pdf'
+                        documentation_url = DOCUMENTATION_BASE_URL + family + '/' + ds_name + '/' + ds_name + '.pdf'
                         documentation_title = 'PDF generated from POGO'
                         documentation_type = 'Generated'
 
-                        doc_check_client = requests.session()
-                        r = requests.get(documentation_URL, allow_redirects=False)
+                        # doc_check_client = requests.session()
+                        r = requests.get(documentation_url, allow_redirects=False, timeout=10)
                         if r.status_code != 200:
                             print 'It seems this device server is not documented in a standard path.'
                             link_documentation = False
@@ -151,66 +147,241 @@ class DscServerUtils:
 
                 elif ds.get('documentation_url', None) is not None:
                     # add documentation provided within list
-                    documentation_URL = ds.get('documentation_url')
+                    documentation_url = ds.get('documentation_url')
                     documentation_title = ds.get('documentation_title', 'Pogo')
                     documentation_type = ds.get('documentation_type', 'Generated')
                     link_documentation = True
 
                 xmi_from_doc = False
+                xmi_from_python = False
+                xmi_from_java = False
                 xmi_from_url = True
-                xmi_content = ''
+                # xmi_content = ''
                 files = {}
 
                 # case when there is no .xmi files
                 if len(ds['xmi_files']) == 0:
+                    print 'No .xmi files found in this path...'
 
-                    print 'No .xmi files found in this path.'
-                    # can use documentation if device server name can be guessed.
-                    if USE_DOC_FOR_NON_XMI and not auto_ds_name:
+                # script can use documentation if device server name is provided
+                if len(ds['xmi_files']) == 0 \
+                        and USE_DOC_FOR_NON_XMI \
+                        and not auto_ds_name \
+                        and (family is not None or len(ds.get('pogo_docs_url_base', '')) > 0):
 
-                        print 'Trying to use documentation to build an .xmi file.'
-                        xmi_from_doc = True
-                        xmi_from_url = False
-                        if family is None:
-                            print 'Cannot parse the path for a family!'
-                            ds_problems.append(ds)
-                            continue
+                    print 'Trying to use documentation to build an .xmi file.'
 
-                        xmi_content = get_xmi_from_html(
-                            description_url=ds.get('pogo_docs_url_base',
-                                                   DOCUMENTATION_BASE_URL
-                                                   + family + '/' + ds_name) + '/ClassDescription.html',
-                            attributes_url=ds.get('pogo_docs_url_base',
-                                                  DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Attributes.html',
-                            commands_url=ds.get('pogo_docs_url_base',
-                                                DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Commands.html',
-                            properties_url=ds.get('pogo_docs_url_base',
-                                                  DOCUMENTATION_BASE_URL + family + '/' + ds_name) + '/Properties.html'
+                    xmi_from_doc = True
+                    xmi_from_url = False
+                    xmi_content = get_xmi_from_html(
+                        description_url=urllib2.urlopen(
+                            ds.get(
+                                'pogo_docs_url_base',
+                                DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
+                            ) + '/' + ds.get('pogo_description_html', 'ClassDescription.html'),
+                            timeout=10
+                        ),
+
+                        attributes_url=urllib2.urlopen(
+                            ds.get(
+                                'pogo_docs_url_base',
+                                DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
+                            ) + '/' + ds.get('pogo_attributes_html', 'Attributes.html'),
+                            timeout=10
+                        ),
+
+                        commands_url=urllib2.urlopen(
+                            ds.get(
+                                'pogo_docs_url_base',
+                                DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
+                            ) + '/' + ds.get('pogo_commands_html', 'Commands.html'),
+                            timeout=10
+                        ),
+
+                        properties_url=urllib2.urlopen(
+                            ds.get(
+                                'pogo_docs_url_base',
+                                DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
+                            ) + '/' + ds.get('pogo_properties_html', 'Properties.html'),
+                            timeout=10
                         )
-                        print 'XMI from doc size is %d.' % len(xmi_content)
-                        files['xmi_file'] = (ds_name + '.xmi', xmi_content)
-                        with open(LOG_PATH + '/' + files['xmi_file'][0], 'wb') as f:
-                            f.write(xmi_content)
+                    )
 
-                        ds['xmi_files'] = [{
-                            'name': ds_name + '.xmi',
-                            'path': '',
-                            'element': {'date': datetime.now(utc)},
-                            'content': xmi_content
-                        },
-                        ]
-                    else:
-                        print 'Skipping this path.'
-                        ds_skipped.append(ds)
-                        continue
+                    print 'XMI from doc size is %d.' % len(xmi_content)
+                    files['xmi_file'] = (ds_name + '.xmi', xmi_content)
+                    with open(LOG_PATH + '/' + files['xmi_file'][0], 'wb') as f:
+                        f.write(xmi_content)
+
+                    ds['xmi_files'] = [{
+                        'name': ds_name + '.xmi',
+                        'path': '',
+                        'element': {'date': datetime.now(utc)},
+                        'content': xmi_content
+                    },
+                    ]
+
+                # when there is no .xmi files yet, try to generate one from sources
+                if len(ds['xmi_files']) == 0 and USE_PYTHON_FOR_NON_XMI \
+                        and len(ds.get('py_files', [])) > 0 \
+                        and not auto_ds_name \
+                        and family is not None and family != '':
+
+                    # print ds['py_files']
+
+                    for py_file in ds['py_files']:
+                        # find class python file
+                        if py_file['name'] in [ds_name + '.py', ds_name + '.PY']:
+
+                            print "Trying to generate an XMI from a %s file..." % py_file['name']
+
+                            try:
+                                # get xmi if possible
+                                xmi_content = python_utils.get_xmi_from_python(
+                                    ds_name, family,
+                                    py_file.get(
+                                        'py_url',
+                                        REMOTE_REPO_URL + '/' + py_file.get('path', '') + '/' + py_file.get(
+                                            'name')
+                                    ),
+                                    element=py_file.get('element', None)
+                                )
+
+                                if xmi_content is not None:
+                                    print 'The XMI is generated. Size of the XMI is %d.' % len(xmi_content)
+
+                                    ds['xmi_files'] = [
+                                        {
+                                            'name': ds_name + '.xmi',
+                                            'path': '',
+                                            'element': py_file['element'],
+                                            'content': xmi_content
+                                        },
+                                    ]
+                                    xmi_from_url = False
+                                    xmi_from_python = True
+                                else:
+                                    print "Filed to generate an XMI from %s. " % py_file['name']
+
+                            except Exception as e:
+                                print "Filed to generate an XMI from %s. " % py_file['name']
+                                print e.message
+
+                            break
+
+                # when there is no .xmi files yet, try to generate one from sources
+                if len(ds['xmi_files']) == 0 and USE_PYTHON_HL_FOR_NON_XMI \
+                        and len(ds.get('py_files', [])) > 0 \
+                        and not auto_ds_name \
+                        and family is not None and family != '':
+
+                    # print ds['py_files']
+
+                    for py_file in ds['py_files']:
+                        # find class python file
+                        if py_file['name'] in [ds_name + '.py', ds_name + '.PY']:
+
+                            print "Trying to generate an XMI from a %s file..." % py_file['name']
+
+                            try:
+                                # get xmi if possible
+                                xmi_content = python_hl_utils.get_xmi_from_python_hl(
+                                    ds_name, family,
+                                    py_file.get(
+                                        'py_url',
+                                        REMOTE_REPO_URL + '/' + py_file.get('path', '') + '/' + py_file.get(
+                                            'name')
+                                    ),
+                                    element=py_file.get('element', None)
+                                )
+
+                                if xmi_content is not None:
+                                    print 'The XMI is generated. Size of the XMI is %d.' % len(xmi_content)
+
+                                    ds['xmi_files'] = [
+                                        {
+                                            'name': ds_name + '.xmi',
+                                            'path': '',
+                                            'element': py_file['element'],
+                                            'content': xmi_content
+                                        },
+                                    ]
+                                    xmi_from_url = False
+                                    xmi_from_python = True
+                                else:
+                                    print "Filed to generate an XMI from %s. " % py_file['name']
+
+                            except Exception as e:
+                                print "Filed to generate an XMI from %s. " % py_file['name']
+                                print e.message
+
+                            break
+
+                # when there is no .xmi files yet, try to generate one from java sources
+                if len(ds['xmi_files']) == 0 and USE_JAVA_FOR_NON_XMI \
+                        and len(ds.get('java_files', [])) > 0 \
+                        and not auto_ds_name \
+                        and family is not None and family != '':    
+                    
+                    for java_file in ds['java_files']:
+                        # find class python file
+                        if java_file['name'] in [ds_name + '.java', ds_name + '.JAVA']:
+    
+                            print "Trying to generate an XMI from a %s file..." % java_file['name']
+    
+                            try:
+                                # get xmi if possible
+                                xmi_content = java_utils.get_xmi_from_java(
+                                    ds_name, family,
+                                    java_file.get(
+                                        'java_url',
+                                        REMOTE_REPO_URL + '/' + java_file.get('path', '') + '/' + java_file.get(
+                                            'name')
+                                    ),
+                                    element=java_file.get('element', None)
+                                )
+    
+                                if xmi_content is not None:
+                                    print 'The XMI is generated. Size of the XMI is %d.' % len(xmi_content)
+    
+                                    ds['xmi_files'] = [
+                                        {
+                                            'name': ds_name + '.xmi',
+                                            'path': '',
+                                            'element': java_file['element'],
+                                            'content': xmi_content
+                                        },
+                                    ]
+                                    xmi_from_url = False
+                                    xmi_from_python = True
+                                else:
+                                    print "Filed to generate an XMI from %s. " % java_file['name']
+    
+                            except Exception as e:
+                                print "Filed to generate an XMI from %s. " % java_file['name']
+                                print e.message
+
+                            break
+
+                if len(ds['xmi_files']) == 0:
+                    print 'Skipping this path.'
+                    ds_skipped.append(ds)
+                    continue
 
                 print 'Checking if the device server already exists in the catalogue...'
 
                 if ds.get('repository_url', None) is not None:
-                    r = self.client.get(SERVER_LIST_URL + ds.get('repository_url'), headers={'Referer': self.referrer})
+                    r = self.client.get(
+                        SERVER_LIST_URL + ds.get('repository_url'),
+                        headers={'Referer': self.referrer},
+                        timeout=10 
+                    )
                     self.referrer = SERVER_LIST_URL + ds.get('repository_url')
                 else:
-                    r = self.client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'], headers={'Referer': self.referrer})
+                    r = self.client.get(
+                        SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
+                        headers={'Referer': self.referrer},
+                        timeout=10
+                    )
                     self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
 
                 ds_on_server = r.json()
@@ -226,13 +397,14 @@ class DscServerUtils:
                     server_ds_pk, server_ds = ds_on_server.popitem()
                     ds_adding = False
                     if server_ds['last_update_method'] == 'manual':
-                        print 'This device server has been updated manually on the server. It will not be updated via script.'
+                        print 'This device server has been updated manually on the server. ' \
+                              'It will not be updated via script.'
                         continue
 
                     if link_documentation:
                         for doc in server_ds['documentation']:
                             if doc['updated_by_script']:
-                                if doc['title'] != documentation_title or doc['url'] != documentation_URL:
+                                if doc['title'] != documentation_title or doc['url'] != documentation_url:
                                     documentation_pk = doc['pk']
                                     break
                                 else:
@@ -266,7 +438,7 @@ class DscServerUtils:
                             readme_url_response = urllib2.urlopen(readme_file.get('readme_url',
                                                                                   REMOTE_REPO_URL + '/' + readme_file[
                                                                                       'path']
-                                                                                  + '/' + readme_file['name']))
+                                                                                  + '/' + readme_file['name']), timeout=10)
                             readme_file_size = int(readme_url_response.info().get('Content-Length', 0))
                             if readme_file_size < 5 or readme_file_size > 2000000:
                                 print 'Readme file size %d is out of limits. Skipping.' % readme_file_size
@@ -323,7 +495,7 @@ class DscServerUtils:
                         'xmi_file_url': xmi_url,
                         'use_url_xmi_file': xmi_from_url,
                         'use_manual_info': False,
-                        'use_uploaded_xmi_file': xmi_from_doc,
+                        'use_uploaded_xmi_file': xmi_from_doc or xmi_from_python or xmi_from_java,
                         'available_in_repository': True,
                         'repository_url': ds_repo_url,
                         'repository_type': ds.get('repository_type', 'SVN'),
@@ -337,7 +509,7 @@ class DscServerUtils:
                             'upload_readme': upload_readme,
                             'other_documentation1': link_documentation,
                             'documentation1_title': documentation_title,
-                            'documentation1_url': documentation_URL,
+                            'documentation1_url': documentation_url,
                             'documentation1_pk': documentation_pk,
                             'documentation1_type': documentation_type,
                         })
@@ -345,7 +517,7 @@ class DscServerUtils:
                         if ds_adding:
                             # case when device server does not yet exists on the server
                             # connect to the adding form
-                            self.client.get(SERVER_ADD_URL, headers={'Referer': self.referrer})  # sets the cookie
+                            self.client.get(SERVER_ADD_URL, headers={'Referer': self.referrer}, timeout=10)  # sets the cookie
                             self.referrer = SERVER_ADD_URL
                             self.csrftoken = self.client.cookies['csrftoken']
 
@@ -356,8 +528,13 @@ class DscServerUtils:
                             })
 
                             # send data to the server
-                            r = self.client.post(SERVER_ADD_URL, data=data_to_send,
-                                            files=files, headers={'Referer': self.referrer})
+                            r = self.client.post(
+                                SERVER_ADD_URL,
+                                data=data_to_send,
+                                files=files,
+                                headers={'Referer': self.referrer},
+                                timeout=10
+                            )
 
                             print 'Adding HTTP result code: %d' % r.status_code
                             add_result = r
@@ -365,9 +542,15 @@ class DscServerUtils:
                             # check if the catalogue is realy updated
                             sleep(1)
                             # list device servers in the repository
-                            r = self.client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
-                                           headers={'Referer': self.referrer})
-                            self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
+                            r = self.client.get(
+                                SERVER_LIST_URL + ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', '')),
+                                headers={'Referer': self.referrer},
+                                timeout=10
+                            )
+                            self.referrer = SERVER_LIST_URL + ds.get(
+                                'repository_url',
+                                REMOTE_REPO_URL + '/' + ds.get('path', '')
+                            )
                             ds_on_server = r.json()
 
                             # if there is exactly one device server it seems the adding was successful
@@ -389,8 +572,11 @@ class DscServerUtils:
                             print 'Updating with XMI: %s' % xmi['name']
 
                             # connect to update form
-                            self.client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                                       headers={'Referer': self.referrer})
+                            self.client.get(
+                                SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                                headers={'Referer': self.referrer},
+                                timeout=10
+                            )
                             self.referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
                             self.csrftoken = self.client.cookies['csrftoken']
 
@@ -407,17 +593,26 @@ class DscServerUtils:
                             })
 
                             # send update form
-                            r = self.client.post(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                                            data=data_to_send,
-                                            files=files, headers={'Referer': self.referrer})
+                            r = self.client.post(
+                                SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                                data=data_to_send,
+                                files=files, headers={'Referer': self.referrer},
+                                timeout=10
+                            )
 
                             print 'Update HTTP result: %d' % r.status_code
                             update_result = r
 
                             # check if the update successfully updated database
-                            r = self.client.get(SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path'],
-                                           headers={'Referer': self.referrer})
-                            self.referrer = SERVER_LIST_URL + REMOTE_REPO_URL + '/' + ds['path']
+                            r = self.client.get(
+                                SERVER_LIST_URL + ds.get('repository_url', REMOTE_REPO_URL + '/' + ds.get('path', '')),
+                                headers={'Referer': self.referrer},
+                                timeout=10
+                            )
+                            self.referrer = SERVER_LIST_URL + ds.get(
+                                'repository_url',
+                                REMOTE_REPO_URL + '/' + ds.get('path', '')
+                            )
                             ds_on_server = r.json()
                             if len(ds_on_server) == 1:
                                 u_server_ds_pk, u_server_ds = ds_on_server.popitem()
@@ -446,13 +641,16 @@ class DscServerUtils:
                                 'name']
 
                     elif ds_adding or FORCE_UPDATE \
-                                   or xmi_need_update:
+                            or xmi_need_update:
                         # case of updating subsequent .XMIs for multiple class device servers
                         print 'Updating with XMI: %s' % xmi['name']
 
                         # load update form
-                        self.client.get(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                                   headers={'Referer': self.referrer})
+                        self.client.get(
+                            SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                            headers={'Referer': self.referrer},
+                            timeout=10
+                        )
                         self.referrer = SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/'
                         self.csrftoken = self.client.cookies['csrftoken']
 
@@ -466,8 +664,11 @@ class DscServerUtils:
                             'submit': 'update',
                         })
 
-                        r = self.client.post(SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
-                                        data=data_to_send, headers={'Referer': self.referrer})
+                        r = self.client.post(
+                            SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
+                            data=data_to_send, headers={'Referer': self.referrer},
+                            timeout=10
+                        )
                         print 'Update result: %d' % r.status_code
                         xmi_updated += 1
                         sleep(1)

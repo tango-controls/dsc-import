@@ -1,12 +1,24 @@
 FORCE_UPDATE = False  # when True no time stamps are checked and updates are performed for all valid device servers
-USE_DOC_FOR_NON_XMI = False # when True, parse documentation to get xmi conntent for device servers without XMI
-ADD_LINK_TO_DOCUMENTATION = True # when True it provides a link to documentation
-FORCE_ONLY_GITHUB = False  # when true only force update of github (to initialy polpulate it with data)
+USE_DOC_FOR_NON_XMI = False  # when True, parse documentation to get xmi contents for device servers without XMI
+USE_PYTHON_FOR_NON_XMI = True  # when True, try to parse python files if exists to generate missing xmi files
+USE_PYTHON_HL_FOR_NON_XMI = True  # when True, try to parse python files if exists to generate missing xmi files
+USE_JAVA_FOR_NON_XMI = True  # when True, try to parse JAVA files if exists to generate missing xmi files
+ADD_LINK_TO_DOCUMENTATION = True  # when True it provides a link to documentation
+FORCE_ONLY_GITHUB = False  # when true only force update of github (to initially populate it with data)
+
+# list of device servers (names) to be excluded from import. Useful to avoid duplication of device servers
+# existing in multiple repositories
+EXCLUDE_LIST = ['SimulatorDS', ]
+
+# list of device servers (names) that are allowed to be updated. Useful for making corrections
+# with FORCE_UPDATE. If not empty
+INCLUDE_ONLY_LIST = []
+
 
 TEST_SERVER_AUTH = False  # Set true if script is run against test server with additional  authentication (webu test)
-VERIFY_CERT = False  # set this to false if running aginst test server without a valid certificate
+VERIFY_CERT = False  # set this to false if running against test server without a valid certificate
 
-# if credentials below are None the script will ask for it with termina
+# if credentials below are None the script will ask for it with terminal
 USER_LOGIN = None
 USER_PASSWORD = None
 # one can provide cred.py locally to run script automatically (please not add it to git)
@@ -29,7 +41,7 @@ LOCAL_REPO_URL = 'file://%s' % LOCAL_REPO_PATH
 # command used to synchronize local SVN repository with the remote one
 REPO_SYNC_COMMAND = 'rsync -av %s::%s/* %s' % (REMOTE_REPO_HOST, REMOTE_REPO_PATH, LOCAL_REPO_PATH)
 
-# if one would like to limit searched treee (useful for one device server update and or tests)
+# if one would like to limit searched tree (useful for one device server update and or tests)
 # do not provide start nor end slashes
 REPO_START_PATH = 'DeviceClasses'
 
@@ -40,24 +52,31 @@ FAMILY_FROM_PATH_PARSER = r'DeviceClasses/([A-Za-z]*)/.*'
 DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc/tango-ds/'
 
 # Tango Controls or test server address
-# SERVER_BASE_URL = 'http://www.tango-controls.org/'
-SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
+
+PRODUCTION_OPERATION = True
+
+if PRODUCTION_OPERATION:
+    SERVER_BASE_URL = 'http://www.tango-controls.org/'
+else:
+    SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
+
 # SERVER_BASE_URL = 'http://localhost:8080/'
 
-# settings for catalogue configuration on the server
-# SERVER_DSC_URL = SERVER_BASE_URL+'developers/dsc/'
-#
-# SERVER_ADD_URL = SERVER_BASE_URL+'developers/dsc/add/'
-#
-# SERVER_LIST_URL = SERVER_BASE_URL+'developers/dsc/list/?repository_url='
-#
-# SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/developers/dsc/'
+if PRODUCTION_OPERATION:
+    # settings for catalogue configuration on the server
+    SERVER_DSC_URL = SERVER_BASE_URL+'developers/dsc/'
 
-# old server layout settings (for testing on dsc-test.modelowanie.pl
-SERVER_DSC_URL = SERVER_BASE_URL+'resources/dsc/'
+    SERVER_ADD_URL = SERVER_BASE_URL+'developers/dsc/add/'
 
-SERVER_ADD_URL = SERVER_BASE_URL+'resources/dsc/add/'
+    SERVER_LIST_URL = SERVER_BASE_URL+'developers/dsc/list/?repository_url='
 
-SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
+    SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/developers/dsc/'
+else:
+    # old server layout settings (for testing on dsc-test.modelowanie.pl
+    SERVER_DSC_URL = SERVER_BASE_URL+'resources/dsc/'
 
-SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'
+    SERVER_ADD_URL = SERVER_BASE_URL+'resources/dsc/add/'
+
+    SERVER_LIST_URL = SERVER_BASE_URL+'resources/dsc/list/?repository_url='
+
+    SERVER_LOGIN_URL = SERVER_BASE_URL+'account/sign-in/?next=/resources/dsc/'

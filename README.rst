@@ -98,8 +98,9 @@ How-to import multiple classes
 
 #. run with a :command:`python dsc_import_utility.py`
 
-    - Depending of :file:`settings.py it will ask you for your credentials for tango-controls.org
-    - Use `--csv-file` command line argument to use a .csv file instead of an SVN repository
+    - Depending of :file:`settings.py` it will ask you for your credentials for tango-controls.org
+    - Use `--csv-file` command line argument to use a .csv file instead of an SVN repository. See :file:`example-csv.csv` and
+      description in :file:`csv_utils.py`
 
 How the script works
 --------------------
@@ -112,6 +113,10 @@ It does import in the following way:
     - Then, it searches the local copy for folders containing .XMI files. It takes into account the
       standard *branches/tags/trunk* structure. The folders where it finds .xmi files or a proper structure are listed
       as candidates to be device servers.
+      
+ - For a .csv file, it parse the file to build a list of device servers/classes to be imported. Each row of the file provides
+   information for one device server (name, link to a .xmi file, repositry url etc.). See :file:`example-csv.csv` and
+   description in :file:`csv_utils.py`
 
 - Then, the list of candidates then is processed and compared (by repository URL) with content in
   the Device Classes Catalogue.
