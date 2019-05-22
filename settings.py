@@ -56,7 +56,7 @@ DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc
 PRODUCTION_OPERATION = True
 
 if PRODUCTION_OPERATION:
-    SERVER_BASE_URL = 'http://www.tango-controls.org/'
+    SERVER_BASE_URL = 'https://www.tango-controls.org/'
 else:
     SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
 
