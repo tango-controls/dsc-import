@@ -47,6 +47,7 @@ DS_COMMAND_DATATYPES = {
     'ConstStringType': 'ConstDevString',
     'StateType': 'State'
 }
+
 DS_COMMAND_DATATYPES_REVERS = {v: k for k, v in DS_COMMAND_DATATYPES.items() }
 DS_COMMAND_DATATYPES_REVERS['DevState']='StateType'
 
@@ -75,9 +76,6 @@ JAVA_DS_COMMAND_DATATYPES = {
 }
 JAVA_DS_COMMAND_DATATYPES_REVERS = {v: k for k, v in JAVA_DS_COMMAND_DATATYPES.items() }
 
-
-
-
 DS_ATTRIBUTE_DATATYPES = {
     'BooleanType': 'DevBoolean',
     'FloatType': 'DevFloat',
@@ -92,7 +90,8 @@ DS_ATTRIBUTE_DATATYPES = {
     'UCharType': 'DevUChar',
     'CharType': 'DevChar',
     'EncodedType': 'DevEncoded',
-    'StateType': 'DevState'
+    'StateType': 'DevState',
+    'EnumType': 'DevEnum',
 }
 
 DS_ATTRIBUTE_DATATYPES_REVERS = {v: k for k, v in DS_ATTRIBUTE_DATATYPES.items() }
