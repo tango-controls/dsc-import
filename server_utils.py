@@ -28,6 +28,7 @@ import requests.auth
 
 from xmi_from_html import get_xmi_from_html
 import python_utils
+import python_hl_utils
 import java_utils
 
 from settings import *
@@ -266,7 +267,55 @@ class DscServerUtils:
                                 print e.message
 
                             break
-                            
+
+                # when there is no .xmi files yet, try to generate one from sources
+                if len(ds['xmi_files']) == 0 and USE_PYTHON_HL_FOR_NON_XMI \
+                        and len(ds.get('py_files', [])) > 0 \
+                        and not auto_ds_name \
+                        and family is not None and family != '':
+
+                    # print ds['py_files']
+
+                    for py_file in ds['py_files']:
+                        # find class python file
+                        if py_file['name'] in [ds_name + '.py', ds_name + '.PY']:
+
+                            print "Trying to generate an XMI from a %s file (as a PythonHl API)..." % py_file['name']
+
+                            try:
+                                # get xmi if possible
+                                xmi_content = python_hl_utils.get_xmi_from_python_hl(
+                                    ds_name, family,
+                                    py_file.get(
+                                        'py_url',
+                                        REMOTE_REPO_URL + '/' + py_file.get('path', '') + '/' + py_file.get(
+                                            'name')
+                                    ),
+                                    element=py_file.get('element', None)
+                                )
+
+                                if xmi_content is not None:
+                                    print 'The XMI is generated. Size of the XMI is %d.' % len(xmi_content)
+
+                                    ds['xmi_files'] = [
+                                        {
+                                            'name': ds_name + '.xmi',
+                                            'path': '',
+                                            'element': py_file['element'],
+                                            'content': xmi_content
+                                        },
+                                    ]
+                                    xmi_from_url = False
+                                    xmi_from_python = True
+                                else:
+                                    print "Filed to generate an XMI from %s. " % py_file['name']
+
+                            except Exception as e:
+                                print "Filed to generate an XMI from %s. " % py_file['name']
+                                print e.message
+
+                            break
+
                 # when there is no .xmi files yet, try to generate one from java sources
                 if len(ds['xmi_files']) == 0 and USE_JAVA_FOR_NON_XMI \
                         and len(ds.get('java_files', [])) > 0 \

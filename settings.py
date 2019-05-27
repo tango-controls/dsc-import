@@ -1,6 +1,7 @@
 FORCE_UPDATE = False  # when True no time stamps are checked and updates are performed for all valid device servers
 USE_DOC_FOR_NON_XMI = False  # when True, parse documentation to get xmi contents for device servers without XMI
 USE_PYTHON_FOR_NON_XMI = True  # when True, try to parse python files if exists to generate missing xmi files
+USE_PYTHON_HL_FOR_NON_XMI = True  # when True, try to parse python files if exists to generate missing xmi files
 USE_JAVA_FOR_NON_XMI = True  # when True, try to parse JAVA files if exists to generate missing xmi files
 ADD_LINK_TO_DOCUMENTATION = True  # when True it provides a link to documentation
 FORCE_ONLY_GITHUB = False  # when true only force update of github (to initially populate it with data)
@@ -55,7 +56,7 @@ DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc
 PRODUCTION_OPERATION = True
 
 if PRODUCTION_OPERATION:
-    SERVER_BASE_URL = 'http://www.tango-controls.org/'
+    SERVER_BASE_URL = 'https://www.tango-controls.org/'
 else:
     SERVER_BASE_URL = 'https://dsc-test.modelowanie.pl/'
 
