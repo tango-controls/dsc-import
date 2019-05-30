@@ -31,7 +31,7 @@ USER_PASSWORD = os.environ.get('DSC_PASSWORD')
 # set the following variables to point to the repositories
 
 LOCAL_REPO_PATH = '/home/ubuntu/dsc-import/tango-repo'  # local copy of the repository
-LOG_PATH = '/home/ubuntu/dsc-import/log'  # where to log some information about import process, not used now.
+LOG_PATH = os.environ.get('DSC_LOG_PATH', '/home/ubuntu/dsc-import/log')  # where to log some information about import process, not used now.
 
 REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
 REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
