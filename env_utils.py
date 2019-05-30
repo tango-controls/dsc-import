@@ -45,7 +45,8 @@ def get_device_servers_list():
         * Optional `DSC_REPOSITORY_CONTACT` - to provide or override contact info in .xmi file,
         * Optional `DSC_FAMILY` - to provide or override family info in.xmi file,
         * Optional `DSC_LICENSE` - to provide or override license info in .xmi file,
-        * Optional `DSC_AUTHOR` - to provide or override author info in .xmi file.
+        * Optional `DSC_AUTHOR` - to provide or override author info in .xmi file,
+        * Optional `DSC_CLASS_DESCRIPTION` - to provide or override class description info in .xmi file.
 
     """
 
@@ -55,17 +56,21 @@ def get_device_servers_list():
     # this is a dict of a device server
     ds = {
         'name': os.environ.get('DSC_DEVICE_SERVER_NAME'),
+        'description': os.environ.get('DSC_DEVICE_SERVER_DESCRIPTION'),
         'xmi_files': [],
         'py_files': [],
         'java_files': [],
         'readme_files': [],
         'repository_url': os.environ.get('DSC_REPOSITORY_URL'),
         'repository_type': os.environ.get('DSC_REPOSITORY_TYPE'),
-        'tag': os.environ.get('DSC_RELEASE_TAG', os.environ.get('DSC_REPOSITORY_TAG', '')),
-        'family': os.environ.get('DSC_FAMILY'),
         'repository_contact': os.environ.get('DSC_REPOSITORY_CONTACT'),
-        'license': os.environ.get('DSC_LICENSE'),
-        'author': os.environ.get('DSC_AUTHOR'),
+        'tag': os.environ.get('DSC_RELEASE_TAG', os.environ.get('DSC_REPOSITORY_TAG', '')),
+        'meta_data': {
+            'family': os.environ.get('DSC_FAMILY'),
+            'class_description': os.environ.get('DSC_CLASS_DESCRIPTION'),
+            'license': os.environ.get('DSC_LICENSE'),
+            'author': os.environ.get('DSC_AUTHOR'),
+        },
     }
 
     # get the URL
