@@ -24,13 +24,14 @@ from lxml import etree
 from xmi_utils import *
 
 
-def get_xmi_from_java(name, family, java_file_url, element=None):
+def get_xmi_from_java(name, family, java_file_url, element=None, meta_data={}):
     """
     Parse a java file and generates xmi based on its contents
     :param name: name of the device server
     :param family: family name
     :param java_file_url: URL of the java file
     :param element: SVN element related to this file (to get some additional information)
+    :param meta_data:
     :return: content of xmi file derived from the python source
     """
 

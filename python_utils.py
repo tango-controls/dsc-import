@@ -172,7 +172,7 @@ def get_class_member_comment(source_lines, member_name):
     pass
 
 
-def get_xmi_from_python(name, family, python_file_url, element = None):
+def get_xmi_from_python(name, family, python_file_url, element = None, meta_data = {}):
     """
 
     :param name: name of the device server
