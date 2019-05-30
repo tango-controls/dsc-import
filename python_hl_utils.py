@@ -319,6 +319,27 @@ def get_command_xml(source_lines, start_index, name, class_xml):
         if index == start_index:
             if line.strip() == '@command':
                 # if there is no command attrib available there is no point to parse them
+                etree.SubElement(
+                    argin_xml,
+                    'type',
+                    attrib={
+                        etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                            'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
+                                'DevVoid'
+                            )
+                    }
+                )
+
+                etree.SubElement(
+                    argout_xml,
+                    'type',
+                    attrib={
+                        etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                            'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
+                                'DevVoid'
+                            )
+                    }
+                )
                 break
 
             line = line.replace("@command(", "")
@@ -332,7 +353,7 @@ def get_command_xml(source_lines, start_index, name, class_xml):
             # vector/spectrum argument has 'DevVar' in the name
             etree.SubElement(
                 argin_xml,
-                'dataType',
+                'type',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
                         'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
@@ -346,12 +367,23 @@ def get_command_xml(source_lines, start_index, name, class_xml):
         elif dtype_in_scalar_match is not None:
             etree.SubElement(
                 argin_xml,
-                'dataType',
+                'type',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
                         'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
-                            str(PYTHON_HL_DATATYPES.get(dtype_in_spectrum_match.group('dtype'), 'DevString')),
+                            str(PYTHON_HL_DATATYPES.get(dtype_in_scalar_match.group('dtype'), 'DevString')),
                             'DevVarString'
+                        )
+                }
+            )
+        else:
+            etree.SubElement(
+                argin_xml,
+                'type',
+                attrib={
+                    etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                        'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
+                            'DevVoid'
                         )
                 }
             )
@@ -365,8 +397,8 @@ def get_command_xml(source_lines, start_index, name, class_xml):
         if dtype_out_spectrum_match is not None:
             # vector/spectrum argument has 'DevVar' in the name
             etree.SubElement(
-                argin_xml,
-                'dataType',
+                argout_xml,
+                'type',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
                         'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
@@ -378,13 +410,24 @@ def get_command_xml(source_lines, start_index, name, class_xml):
             )
         elif dtype_out_scalar_match is not None:
             etree.SubElement(
-                argin_xml,
-                'dataType',
+                argout_xml,
+                'type',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
                         'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
-                            str(PYTHON_HL_DATATYPES.get(dtype_out_spectrum_match.group('dtype'), 'DevString')),
+                            str(PYTHON_HL_DATATYPES.get(dtype_out_scalar_match.group('dtype'), 'DevString')),
                             'DevVarString'
+                        )
+                }
+            )
+        else:
+            etree.SubElement(
+                argout_xml,
+                'type',
+                attrib={
+                    etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
+                        'pogoDsl:' + DS_COMMAND_DATATYPES_REVERS.get(
+                            'DevVoid'
                         )
                 }
             )
@@ -544,7 +587,7 @@ def get_property_xml(source_lines, start_index, name, class_xml, subelement_type
         if dtype_spectrum_match is not None:
             etree.SubElement(
                 property_xml,
-                'dataType',
+                'type',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
                         'pogoDsl:' + DS_ATTRIBUTE_DATATYPES_REVERS.get(
@@ -558,7 +601,7 @@ def get_property_xml(source_lines, start_index, name, class_xml, subelement_type
         if dtype_scalar_match is not None:
             etree.SubElement(
                 property_xml,
-                'dataType',
+                'type',
                 attrib={
                     etree.QName('http://www.w3.org/2001/XMLSchema-instance', 'type'):
                         'pogoDsl:' + DS_ATTRIBUTE_DATATYPES_REVERS.get(
@@ -606,13 +649,8 @@ def get_property_xml(source_lines, start_index, name, class_xml, subelement_type
 
         if description_match is not None:
             property_xml.set('description', description_match.group('description'))
-
-        # # check for label
-        # label_match = re.search(r"""label\s*=\s*['"](?P<label>\w+)['"]""", line)
-        # if label_match is not None:
-        #     attribute_properties_xml.set('label', label_match.group('label'))
-
-        # TODO: pars for other attribute properties    
+        else:
+            property_xml.set('description', '')
 
         # check for attribute definition end
         no_brackets_open += line.count('(') - line.count(')')
@@ -625,13 +663,16 @@ def get_property_xml(source_lines, start_index, name, class_xml, subelement_type
     return property_xml, index
 
 
-def get_class_xml(source_lines, name, xmi_xml, meta_data={}):
+def get_class_xml(source_lines, start_index, name, xmi_xml, element=None, meta_data={}):
     """
     Generates class relate xml element from selected lines
 
     :param source_lines:
+    :param start_index:
     :param name:
     :param xmi_xml:
+    :param element:
+    :param meta_data:
     :return: (class_xml, end_index)
     """
 
@@ -640,8 +681,86 @@ def get_class_xml(source_lines, name, xmi_xml, meta_data={}):
     description_xml = etree.SubElement(classes_xml, 'description')
     identification_xml = etree.SubElement(description_xml, 'identification')
 
+    # find description part (comment)
+    description_started = False
+    class_description = ''
+    for line in source_lines:
+        if re.match(r'#\s+' + name + r'\s+Class Description', line) is not None:
+            description_started = True
+
+        if description_started:
+            if line.startswith('#===========================') or line.startswith(' ') or line == '':
+                # end of description
+                break
+
+            class_description += line[2:].strip() + '\n\n'
+
+    # remove html
+    class_description = re.sub('</p>', '\n\n', class_description)
+    class_description = re.sub('<br/>', '\n\n', class_description)
+    class_description = re.sub('<br />', '\n\n', class_description)
+    class_description = re.sub('<b>\s*', '*', class_description)
+    class_description = re.sub('\s*</b>', '*', class_description)
+    class_description = re.sub(r"<a\s+[^>]*href=['\"](?P<hhref>[^'\"]+)['\"][^>]*(?=>)>\s*</a>", " \g<hhref> ",
+                               class_description)
+    class_description = re.sub('<[^<>a/]+?>', '', class_description)
+    class_description = re.sub('</[^a<>]+?>', '', class_description)
+    class_description = re.sub(r"<a\s+[^>]*href=['\"](?P<hhref>[^'\"]+)['\"][^>]*(?=>)>(?P<text>[\s[^<]]+(?=</a>))</a>",
+                               ' `\g<text> <\g<hhref>>`_ ', class_description)
+
+    # find author
+    author = ''
+
+    for line in source_lines:
+        if line.startswith("# $Author: "):
+            author = line[10:].replace('$', '').strip()
+            break
+
+    if author == '' and element is not None:
+        author = element.get('author', '')
+
+    author = meta_data.get('author', author)
+
+    # find copyright
+    copyleft = ''
+    copyleft_started = False
+
+    for line in source_lines:
+
+        if not copyleft_started:
+            # find the first line of the copyleft
+            match_result = re.match(r'#\s+copyleft\s*:\s*(?P<copyleft>.+)', line)
+            if match_result is not None:
+                copyleft_started = True
+                copyleft = match_result.group('copyleft').strip()
+
+        else:
+            # check if we are still in the copyleft section
+            match_result = re.match(r'#\s+(?P<copyleft>.+)', line)
+
+            if match_result is None:
+                # if not, stop processing
+                break
+            # build the string
+            copyleft += '\n' + match_result.group('copyleft').strip()
+
+    identification_xml.set('classFamily', meta_data.get('family'))
+
+    identification_xml.set('platform', 'All Platforms')
+
+    identification_xml.set('reference', meta_data.get('reference', ''))
+
+    identification_xml.set('manufacturer', meta_data.get('manufacturer', ''))
+
+    if author != '':
+        identification_xml.set('contact', author)
+
+    description_xml.set('language', 'PythonHL')
+
+    description_xml.set('description', meta_data.get('class_description', class_description))
+
     # iteration over lines
-    index = 0  # use indexing instead of iterator
+    index = start_index  # use indexing instead of iterator
     while index < len(source_lines):
 
         line = source_lines[index]
@@ -671,9 +790,16 @@ def get_class_xml(source_lines, name, xmi_xml, meta_data={}):
             while tmp_index < len(source_lines) and cmd_name_match is None:
                 cmd_name_match = REGEX_METHOD_START.search(source_lines[tmp_index])
                 if cmd_name_match is not None:
+                    # TODO: implement parsing methods' comments as descriptions for commands
+                    # if source_lines[tmp_index+1].strip().startswith('"""'):
+                    #     cmd_description = source_lines[tmp_index+1].strip()[]
+                    #     while
+
                     (cmd_xml, end_index) = get_command_xml(source_lines, index, cmd_name_match.group('name'),
                                                               classes_xml)
                     index = end_index
+
+                tmp_index += 1
 
         # look for pipes declarations
         pipe_mo = REGEX_PIPE_START.search(line)
@@ -720,7 +846,7 @@ def get_class_xml(source_lines, name, xmi_xml, meta_data={}):
     return classes_xml, index
 
 
-def get_xmi_from_python_hl(name, family, python_file_url, element = None, meta_data={}):
+def get_xmi_from_python_hl(name, family, python_file_url, element=None, meta_data={}):
     """
     Generates xmi file content from a parsed Python HL device server
 
@@ -771,22 +897,44 @@ def get_xmi_from_python_hl(name, family, python_file_url, element = None, meta_d
         line = source_lines[index]
         assert isinstance(line, str)
 
+        meta_data['family'] = meta_data.get('family', family)
+
         # check if we start class
         if line.strip().startswith('class'):
             mo = REGEX_DEVICE_CLASS.match(line.strip())
             if mo is not None:
-                (classes_xml, end_index) = get_class_xml(source_lines, mo.group('class_name'), xmi_xml)
+                (classes_xml, end_index) = get_class_xml(source_lines, index, mo.group('class_name'), xmi_xml,
+                                                         element=element, meta_data=meta_data)
                 index = end_index
 
         index += 1
                 
     return '<?xml version="1.0" encoding="ASCII"?>' + etree.tostring(xmi_xml)
 
+
 if __name__ == "__main__":
     # main function perform tests
 
     py_file1 = 'test-assets/RaspberryPiIO.py'
 
-    print get_xmi_from_python_hl('RaspberryPiIO', 'Communication', 'file:' + py_file1)
+    xmi = get_xmi_from_python_hl(
+        'RaspberryPiIO', 'Communication', 'file:' + py_file1,
+        meta_data={'author': 'pg@pg.com'}
+    )
 
+    print xmi
 
+    with open('RaspberryPiIO.xmi', 'w') as f:
+        f.write(xmi)
+
+    py_file2 = 'test-assets/Eiger.py'
+
+    xmi = get_xmi_from_python_hl(
+        'Eiger', 'Communication', 'file:' + py_file2,
+        meta_data={'author': 'kits@maxiv.edu.se'}
+    )
+
+    print xmi
+
+    with open('Eiger.xmi', 'w') as f:
+        f.write(xmi)

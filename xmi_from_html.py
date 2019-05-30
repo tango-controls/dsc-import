@@ -23,7 +23,7 @@ import re
 from xmi_utils import *
 
 
-def get_xmi_from_html(description_url, attributes_url="", commands_url="", pipes_url="", properties_url=""):
+def get_xmi_from_html(description_url, attributes_url="", commands_url="", pipes_url="", properties_url="", meta_data={}):
     """ This function parses device server documentation html texts for information about device class and then
     produce .xmi"""
 
