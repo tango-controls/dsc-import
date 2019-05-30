@@ -115,12 +115,14 @@ class DscServerUtils:
                     development_status = 'released'
 
                 family_parsed = re.match(FAMILY_FROM_PATH_PARSER, ds.get('path', ''))
-                family = None
+                family = ds.get('meta_data', {}).get('family', None)
 
-                if family_parsed is not None:
+                if family_parsed is not None and family is None:
                     family = family_parsed.group(1)
                     if family is not None:
                         print "Class family from the path is %s." % family
+
+
 
                 # documentation
                 documentation_url = ''
@@ -204,7 +206,8 @@ class DscServerUtils:
                                 DOCUMENTATION_BASE_URL + str(family) + '/' + ds_name
                             ) + '/' + ds.get('pogo_properties_html', 'Properties.html'),
                             timeout=10
-                        )
+                        ),
+                        meta_data=ds.get('meta_data', {}),
                     )
 
                     print 'XMI from doc size is %d.' % len(xmi_content)
@@ -243,7 +246,8 @@ class DscServerUtils:
                                         REMOTE_REPO_URL + '/' + py_file.get('path', '') + '/' + py_file.get(
                                             'name')
                                     ),
-                                    element=py_file.get('element', None)
+                                    element=py_file.get('element', None),
+                                    meta_data=ds.get('meta_data', {}),
                                 )
 
                                 if xmi_content is not None:
@@ -291,7 +295,8 @@ class DscServerUtils:
                                         REMOTE_REPO_URL + '/' + py_file.get('path', '') + '/' + py_file.get(
                                             'name')
                                     ),
-                                    element=py_file.get('element', None)
+                                    element=py_file.get('element', None),
+                                    meta_data=ds.get('meta_data', {}),
                                 )
 
                                 if xmi_content is not None:
@@ -337,7 +342,8 @@ class DscServerUtils:
                                         REMOTE_REPO_URL + '/' + java_file.get('path', '') + '/' + java_file.get(
                                             'name')
                                     ),
-                                    element=java_file.get('element', None)
+                                    element=java_file.get('element', None),
+                                    meta_data=ds.get('meta_data', {}),
                                 )
     
                                 if xmi_content is not None:
