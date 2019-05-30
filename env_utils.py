@@ -92,11 +92,11 @@ def get_device_servers_list():
     # retrieve information from the URL
     url_parts = urlparse.urlsplit(url)
 
-    ds['{0}_files'.format(file_key)] = {
+    ds['{0}_files'.format(file_key)].append({
         'name': url_parts.path.split('/')[-1],
         '{0}_url'.format(file_key): url,
         'element': {'date': datetime.now(utc)},
-    }
+    })
 
     # add a readme if available
     if os.environ.get('DSC_README_URL') not in [None, '']:
