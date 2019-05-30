@@ -64,7 +64,7 @@ dsc_sever.login_to_catalogue(login, password)
 # get list of device servers to be processed
 ds_list = []
 
-if args.csv_file is None:
+if args.csv_file is not None:
     # if SV file provided the list is built according to it
     print
     print "Using %s file to build a list of device servers." % args.csv_file
