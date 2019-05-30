@@ -55,7 +55,7 @@ DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc
 
 # Tango Controls or test server address
 
-PRODUCTION_OPERATION = True
+PRODUCTION_OPERATION = eval(os.environ.get('DSC_PRODUCTION_OPERATION', 'True'))
 
 if PRODUCTION_OPERATION:
     SERVER_BASE_URL = 'https://www.tango-controls.org/'
