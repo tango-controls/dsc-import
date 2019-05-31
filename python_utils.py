@@ -289,20 +289,21 @@ def get_xmi_from_python(name, family, python_file_url, element = None, meta_data
     
     classes_xml.set('name', name)
     
-    identification_xml.set('classFamily', family)
+    identification_xml.set('classFamily', meta_data.get('family', family))
 
-    identification_xml.set('platform', 'All Platforms')
+    identification_xml.set('platform', meta_data.get('platform', 'All Platforms'))
 
-    identification_xml.set('reference', '')
+    identification_xml.set('reference', meta_data.get('reference', ''))
 
-    identification_xml.set('manufacturer', '')
+    identification_xml.set('manufacturer', meta_data.get('manufacturer', ''))
     
+    author = meta_data.get('author', author)
     if author != '':
         identification_xml.set('contact', author)
         
     description_xml.set('language', 'Python')
     
-    description_xml.set('description', class_description)
+    description_xml.set('description', meta_data.get('class_description', class_description))
     
     # generate attributes
     for attr_name, attr in attr_list.iteritems():

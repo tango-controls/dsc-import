@@ -1,3 +1,5 @@
+import os
+
 FORCE_UPDATE = False  # when True no time stamps are checked and updates are performed for all valid device servers
 USE_DOC_FOR_NON_XMI = False  # when True, parse documentation to get xmi contents for device servers without XMI
 USE_PYTHON_FOR_NON_XMI = True  # when True, try to parse python files if exists to generate missing xmi files
@@ -19,8 +21,8 @@ TEST_SERVER_AUTH = False  # Set true if script is run against test server with a
 VERIFY_CERT = False  # set this to false if running against test server without a valid certificate
 
 # if credentials below are None the script will ask for it with terminal
-USER_LOGIN = None
-USER_PASSWORD = None
+USER_LOGIN = os.environ.get('DSC_LOGIN')
+USER_PASSWORD = os.environ.get('DSC_PASSWORD')
 # one can provide cred.py locally to run script automatically (please not add it to git)
 # import cred
 # USER_LOGIN = cred.T_USER
@@ -29,7 +31,7 @@ USER_PASSWORD = None
 # set the following variables to point to the repositories
 
 LOCAL_REPO_PATH = '/home/ubuntu/dsc-import/tango-repo'  # local copy of the repository
-LOG_PATH = '/home/ubuntu/dsc-import/log'  # where to log some information about import process, not used now.
+LOG_PATH = os.environ.get('DSC_LOG_PATH', '/home/ubuntu/dsc-import/log')  # where to log some information about import process, not used now.
 
 REMOTE_REPO_HOST = 'svn.code.sf.net'  # host of a SVN repository
 REMOTE_REPO_PATH = 'p/tango-ds/code'  # path within SVN server
@@ -53,7 +55,7 @@ DOCUMENTATION_BASE_URL = 'http://www.esrf.eu/computing/cs/tango/tango_doc/ds_doc
 
 # Tango Controls or test server address
 
-PRODUCTION_OPERATION = True
+PRODUCTION_OPERATION = eval(os.environ.get('DSC_PRODUCTION_OPERATION', 'True'))
 
 if PRODUCTION_OPERATION:
     SERVER_BASE_URL = 'https://www.tango-controls.org/'

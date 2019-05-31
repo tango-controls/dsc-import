@@ -24,6 +24,7 @@ from server_utils import DscServerUtils
 import argparse
 import svn_utils
 import csv_utils
+import env_utils
 
 from settings import *
 
@@ -35,9 +36,17 @@ arguments = argparse.ArgumentParser(description="This script batch imports devic
 arguments.add_argument("--csv-file", dest='csv_file', default=None, help="If provided the script will parse the CSV_FILE instead "
                                                            "of an SVN repository defined in settings.py.", )
 
+arguments.add_argument(
+    "--use-env",
+    dest='use_env',
+    action='store_true',
+    help="If provided the script will use environment variables (see README) to find information about a device class"
+         "to import or update in the catalogue"
+)
+
 args = arguments.parse_args()
 
-print "You are going to update a device servers catalogue info on the server: %s" % SERVER_BASE_URL
+print("You are going to update a device servers catalogue info on the server: %s" % SERVER_BASE_URL)
 
 # login to server
 if USER_LOGIN is None or USER_PASSWORD is None:
@@ -55,7 +64,17 @@ dsc_sever.login_to_catalogue(login, password)
 # get list of device servers to be processed
 ds_list = []
 
-if args.csv_file is None:
+if args.csv_file is not None:
+    # if SV file provided the list is built according to it
+    print
+    print "Using %s file to build a list of device servers." % args.csv_file
+    print
+    ds_list = csv_utils.get_device_servers_list(args.csv_file)
+
+elif args.use_env:
+    ds_list = env_utils.get_device_servers_list()
+
+else:
     # by default list of device servers is got from an SVN repository
     print
     print "Using SVN as source of device servers list."
@@ -73,12 +92,6 @@ if args.csv_file is None:
     repo = svn.remote.RemoteClient(LOCAL_REPO_URL)
     ds_list = svn_utils.get_device_servers_list(repo, REPO_START_PATH, 15)
 
-else:
-    # if SV file provided the list is built according to it
-    print
-    print "Using %s file to build a list of device servers." % args.csv_file
-    print
-    ds_list = csv_utils.get_device_servers_list(args.csv_file)
 
 print 'Found %d device servers.' % len(ds_list)
 

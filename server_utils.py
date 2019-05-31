@@ -111,7 +111,7 @@ class DscServerUtils:
 
                 # development status
                 development_status = 'new'
-                if ds.has_key('tag'):
+                if ds.has_key('tag') and ds['tag'] not in (None, ''):
                     development_status = 'released'
 
                 family_parsed = re.match(FAMILY_FROM_PATH_PARSER, ds.get('path', ''))

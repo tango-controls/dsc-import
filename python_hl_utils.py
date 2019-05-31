@@ -746,7 +746,7 @@ def get_class_xml(source_lines, start_index, name, xmi_xml, element=None, meta_d
 
     identification_xml.set('classFamily', meta_data.get('family'))
 
-    identification_xml.set('platform', 'All Platforms')
+    identification_xml.set('platform', meta_data.get('platform', 'All Platforms'))
 
     identification_xml.set('reference', meta_data.get('reference', ''))
 
