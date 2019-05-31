@@ -21,6 +21,8 @@ import os
 from pytz import utc
 from datetime import datetime
 import urlparse
+import urllib2
+import sys
 
 
 def get_device_servers_list():
@@ -46,7 +48,8 @@ def get_device_servers_list():
         * Optional `DSC_FAMILY` - to provide or override family info in.xmi file,
         * Optional `DSC_LICENSE` - to provide or override license info in .xmi file,
         * Optional `DSC_AUTHOR` - to provide or override author info in .xmi file,
-        * Optional `DSC_CLASS_DESCRIPTION` - to provide or override class description info in .xmi file.
+        * Optional `DSC_CLASS_DESCRIPTION` - to provide or override class description info in .xmi file,
+        * Optional `DSC_URL_IS_LOCAL` - if True, an XMI file is provided to the server with its content read locally.
 
     """
 
@@ -97,6 +100,19 @@ def get_device_servers_list():
         '{0}_url'.format(file_key): url,
         'element': {'date': datetime.now(utc)},
     })
+
+    # to allow import from non-public repositories, xmi file content will be loaded locally
+    if file_key == 'xmi' and \
+            (eval(os.environ.get('DSC_URL_IS_LOCAL', "False")) or os.environ.get('DSC_XMI_URL').startswith('file://')):
+
+        print 'Reading a .XMI file locally...'
+        url_response = urllib2.urlopen(os.environ.get('DSC_XMI_URL'))
+        size = int(url_response.info().get('Content-Length', 0))
+        if size < 10 or size > 50000:
+            sys.exit("XMI file size out of limits. ")
+        # read the file
+        xmi_source = url_response.read()
+        ds['xmi_files'][0]['content'] = xmi_source
 
     # add a readme if available
     if os.environ.get('DSC_README_URL') not in [None, '']:

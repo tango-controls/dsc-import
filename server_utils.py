@@ -16,7 +16,7 @@
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 """
-import os
+import sys
 from getpass import getpass
 from dateutil import parser as date_parser
 from datetime import datetime
@@ -488,8 +488,10 @@ class DscServerUtils:
                         continue
 
                     if xmi.has_key('content'):
+                        print ".XMI will be uploaded..."
                         files['xmi_file'] = (xmi['name'], xmi['content'])
                         xmi_from_url = False
+                        xmi_url = ''
 
                     # prepare common data to be sent
                     data_to_send = {
@@ -501,7 +503,7 @@ class DscServerUtils:
                         'xmi_file_url': xmi_url,
                         'use_url_xmi_file': xmi_from_url,
                         'use_manual_info': False,
-                        'use_uploaded_xmi_file': xmi_from_doc or xmi_from_python or xmi_from_java,
+                        'use_uploaded_xmi_file': xmi_from_doc or xmi_from_python or xmi_from_java or not xmi_from_url,
                         'available_in_repository': True,
                         'repository_url': ds_repo_url,
                         'repository_type': ds.get('repository_type', 'SVN'),
@@ -690,9 +692,13 @@ class DscServerUtils:
         print ''
         print '\nImport summary:'
         print '---------------------------'
-        print 'Skippend %d device servers (no xmi files).' % len(ds_skipped)
+        print 'Skipped %d device servers (no xmi files).' % len(ds_skipped)
         print 'Problems with %d device servers (errors in processing).' % len(ds_problems)
         print 'Count of updated or added XMI files: %d' % (xmi_added + xmi_updated)
         print 'Count of untouched (not changed) xmi files: %d ' % xmi_not_changed
         print '---------------------------'
         print ''
+
+        if len(ds_problems) > 0 and (xmi_added + xmi_updated + xmi_not_changed) == 0:
+
+            sys.exit('There were processing errors!')
