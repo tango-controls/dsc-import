@@ -293,9 +293,9 @@ def get_xmi_from_python(name, family, python_file_url, element = None, meta_data
 
     identification_xml.set('platform', meta_data.get('platform', 'All Platforms'))
 
-    identification_xml.set('reference', meta_data.get('reference'))
+    identification_xml.set('reference', meta_data.get('reference', ''))
 
-    identification_xml.set('manufacturer', meta_data.get('manufacturer'))
+    identification_xml.set('manufacturer', meta_data.get('manufacturer', ''))
     
     author = meta_data.get('author', author)
     if author != '':
