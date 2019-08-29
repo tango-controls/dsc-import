@@ -108,7 +108,7 @@ def get_device_servers_list():
         print 'Reading a .XMI file locally...'
         url_response = urllib2.urlopen(os.environ.get('DSC_XMI_URL'))
         size = int(url_response.info().get('Content-Length', 0))
-        if size < 10 or size > 50000:
+        if size < 10 or size > 500000:
             sys.exit("XMI file size out of limits. ")
         # read the file
         xmi_source = url_response.read()
