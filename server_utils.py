@@ -229,11 +229,9 @@ class DscServerUtils:
                         and not auto_ds_name \
                         and family is not None and family != '':
 
-                    # print ds['py_files']
-
                     for py_file in ds['py_files']:
                         # find class python file
-                        if py_file['name'] in [ds_name + '.py', ds_name + '.PY']:
+                        if py_file.get('force_parsing') or py_file['name'] in [ds_name + '.py', ds_name + '.PY']:
 
                             print "Trying to generate an XMI from a %s file..." % py_file['name']
 
@@ -253,24 +251,22 @@ class DscServerUtils:
                                 if xmi_content is not None:
                                     print 'The XMI is generated. Size of the XMI is %d.' % len(xmi_content)
 
-                                    ds['xmi_files'] = [
+                                    ds['xmi_files'].append(
                                         {
-                                            'name': ds_name + '.xmi',
+                                            'name': py_file['name'].split('.')[-2] + '.xmi',
                                             'path': '',
                                             'element': py_file['element'],
                                             'content': xmi_content
-                                        },
-                                    ]
+                                        }
+                                    )
                                     xmi_from_url = False
                                     xmi_from_python = True
                                 else:
-                                    print "Filed to generate an XMI from %s. " % py_file['name']
+                                    print "Failed to generate an XMI from %s. " % py_file['name']
 
                             except Exception as e:
-                                print "Filed to generate an XMI from %s. " % py_file['name']
+                                print "Failed to generate an XMI from %s. " % py_file['name']
                                 print e.message
-
-                            break
 
                 # when there is no .xmi files yet, try to generate one from sources
                 if len(ds['xmi_files']) == 0 and USE_PYTHON_HL_FOR_NON_XMI \
@@ -282,7 +278,7 @@ class DscServerUtils:
 
                     for py_file in ds['py_files']:
                         # find class python file
-                        if py_file['name'] in [ds_name + '.py', ds_name + '.PY']:
+                        if py_file.get('force_parsing') or py_file['name'] in [ds_name + '.py', ds_name + '.PY']:
 
                             print "Trying to generate an XMI from a %s file (as a PythonHl API)..." % py_file['name']
 
@@ -302,24 +298,22 @@ class DscServerUtils:
                                 if xmi_content is not None:
                                     print 'The XMI is generated. Size of the XMI is %d.' % len(xmi_content)
 
-                                    ds['xmi_files'] = [
+                                    ds['xmi_files'].append(
                                         {
-                                            'name': ds_name + '.xmi',
+                                            'name': py_file['name'].split('.')[-2] + '.xmi',
                                             'path': '',
                                             'element': py_file['element'],
                                             'content': xmi_content
-                                        },
-                                    ]
+                                        }
+                                    )
                                     xmi_from_url = False
                                     xmi_from_python = True
                                 else:
-                                    print "Filed to generate an XMI from %s. " % py_file['name']
+                                    print "Failed to generate an XMI from %s. " % py_file['name']
 
                             except Exception as e:
-                                print "Filed to generate an XMI from %s. " % py_file['name']
+                                print "Failed to generate an XMI from %s. " % py_file['name']
                                 print e.message
-
-                            break
 
                 # when there is no .xmi files yet, try to generate one from java sources
                 if len(ds['xmi_files']) == 0 and USE_JAVA_FOR_NON_XMI \
@@ -329,7 +323,7 @@ class DscServerUtils:
                     
                     for java_file in ds['java_files']:
                         # find class python file
-                        if java_file['name'] in [ds_name + '.java', ds_name + '.JAVA']:
+                        if py_file.get('force_parsing') or java_file['name'] in [ds_name + '.java', ds_name + '.JAVA']:
     
                             print "Trying to generate an XMI from a %s file..." % java_file['name']
     
@@ -349,24 +343,22 @@ class DscServerUtils:
                                 if xmi_content is not None:
                                     print 'The XMI is generated. Size of the XMI is %d.' % len(xmi_content)
     
-                                    ds['xmi_files'] = [
+                                    ds['xmi_files'].append(
                                         {
-                                            'name': ds_name + '.xmi',
+                                            'name': java_file['name'].split('.')[-2] + '.xmi',
                                             'path': '',
                                             'element': java_file['element'],
                                             'content': xmi_content
-                                        },
-                                    ]
+                                        }
+                                    )
                                     xmi_from_url = False
                                     xmi_from_python = True
                                 else:
-                                    print "Filed to generate an XMI from %s. " % java_file['name']
+                                    print "Failed to generate an XMI from %s. " % java_file['name']
     
                             except Exception as e:
-                                print "Filed to generate an XMI from %s. " % java_file['name']
+                                print "Failed to generate an XMI from %s. " % java_file['name']
                                 print e.message
-
-                            break
 
                 if len(ds['xmi_files']) == 0:
                     print 'Skipping this path.'
@@ -651,7 +643,7 @@ class DscServerUtils:
                     elif ds_adding or FORCE_UPDATE \
                             or xmi_need_update:
                         # case of updating subsequent .XMIs for multiple class device servers
-                        print 'Updating with XMI: %s' % xmi['name']
+                        print 'Updating with another XMI: %s' % xmi['name']
 
                         # load update form
                         self.client.get(
@@ -675,9 +667,11 @@ class DscServerUtils:
                         r = self.client.post(
                             SERVER_DSC_URL + 'ds/' + str(server_ds_pk) + '/update/',
                             data=data_to_send, headers={'Referer': self.referrer},
+                            files=files,
                             timeout=10
                         )
                         print 'Update result: %d' % r.status_code
+
                         xmi_updated += 1
                         sleep(1)
                     else:

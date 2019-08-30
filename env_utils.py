@@ -92,27 +92,36 @@ def get_device_servers_list():
         url = os.environ.get('DSC_JAVA_URL')
         file_key = 'java'
 
-    # retrieve information from the URL
-    url_parts = urlparse.urlsplit(url)
+    # split URL over space
+    urls_list = [s.strip() for s in url.splitlines()]
 
-    ds['{0}_files'.format(file_key)].append({
-        'name': url_parts.path.split('/')[-1],
-        '{0}_url'.format(file_key): url,
-        'element': {'date': datetime.now(utc)},
-    })
+    file_index = 0
+    for url in urls_list:
+        # retrieve information from the URL
+        print "Processing: " + url
+        url_parts = urlparse.urlsplit(url)
 
-    # to allow import from non-public repositories, xmi file content will be loaded locally
-    if file_key == 'xmi' and \
-            (eval(os.environ.get('DSC_URL_IS_LOCAL', "False")) or os.environ.get('DSC_XMI_URL').startswith('file://')):
+        ds['{0}_files'.format(file_key)].append({
+            'name': url_parts.path.split('/')[-1],
+            '{0}_url'.format(file_key): url,
+            'element': {'date': datetime.now(utc)},
+            'force_parsing': True,
+        })
 
-        print 'Reading a .XMI file locally...'
-        url_response = urllib2.urlopen(os.environ.get('DSC_XMI_URL'))
-        size = int(url_response.info().get('Content-Length', 0))
-        if size < 10 or size > 500000:
-            sys.exit("XMI file size out of limits. ")
-        # read the file
-        xmi_source = url_response.read()
-        ds['xmi_files'][0]['content'] = xmi_source
+        # to allow import from non-public repositories, xmi file content will be loaded locally
+        if file_key == 'xmi' and \
+                (eval(os.environ.get('DSC_URL_IS_LOCAL', "False")) or os.environ.get('DSC_XMI_URL').startswith('file://')):
+
+            print 'Reading a .XMI file locally...'
+            url_response = urllib2.urlopen(url)
+            size = int(url_response.info().get('Content-Length', 0))
+            if size < 10 or size > 500000:
+                sys.exit("XMI file size out of limits. ")
+            # read the file
+            xmi_source = url_response.read()
+            ds['xmi_files'][file_index]['content'] = xmi_source
+
+        file_index += 1
 
     # add a readme if available
     if os.environ.get('DSC_README_URL') not in [None, '']:
