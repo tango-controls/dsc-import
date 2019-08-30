@@ -870,7 +870,7 @@ def get_xmi_from_python_hl(name, family, python_file_url, element=None, meta_dat
     # open url
     url_response = urllib2.urlopen(python_file_url)
     size = int(url_response.info().get('Content-Length', 0))
-    if size < 10 or size > 500000:
+    if size < 10 or size > 2000000:
         print
         print "Python file size out of limits. "
         return None

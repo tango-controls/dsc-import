@@ -47,7 +47,7 @@ def get_xmi_from_java(name, family, java_file_url, element=None, meta_data={}):
     # open url
     url_response = urllib2.urlopen(java_file_url)
     size = int(url_response.info().get('Content-Length', 0))
-    if size < 10 or size > 500000:
+    if size < 10 or size > 2000000:
         print
         print "Java file size out of limits. "
         return None
