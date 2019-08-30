@@ -752,12 +752,16 @@ def get_class_xml(source_lines, start_index, name, xmi_xml, element=None, meta_d
 
     identification_xml.set('manufacturer', meta_data.get('manufacturer', ''))
 
+    identification_xml.set('bus', meta_data.get('bus', ''))
+
     if author != '':
         identification_xml.set('contact', author)
 
     description_xml.set('language', 'PythonHL')
 
     description_xml.set('description', meta_data.get('class_description', class_description))
+
+    description_xml.set('license', meta_data.get('license', ''))
 
     # iteration over lines
     index = start_index  # use indexing instead of iterator

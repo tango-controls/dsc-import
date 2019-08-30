@@ -296,6 +296,8 @@ def get_xmi_from_python(name, family, python_file_url, element = None, meta_data
     identification_xml.set('reference', meta_data.get('reference', ''))
 
     identification_xml.set('manufacturer', meta_data.get('manufacturer', ''))
+
+    identification_xml.set('bus', meta_data.get('bus', ''))
     
     author = meta_data.get('author', author)
     if author != '':
@@ -304,6 +306,8 @@ def get_xmi_from_python(name, family, python_file_url, element = None, meta_data
     description_xml.set('language', 'Python')
     
     description_xml.set('description', meta_data.get('class_description', class_description))
+
+    description_xml.set('license', meta_data.get('license', ''))
     
     # generate attributes
     for attr_name, attr in attr_list.iteritems():
