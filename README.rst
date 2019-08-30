@@ -160,4 +160,5 @@ variables provides information for the script:
 * Optional `DSC_AUTHOR` - to provide or override author info in .xmi file,
 * Optional `DSC_CLASS_DESCRIPTION` - to provide or override class description info in .xmi file,
 * Optional `DSC_URL_IS_LOCAL` - if True, an XMI file is provided to the server with its content read locally.
+* Optional/supplement metadata for parsing .py and .java: `DSC_MANUFACTURER`, `DSC_REFERENCE`, `DSC_PLATFORM`, `DSC_BUS`.
 
