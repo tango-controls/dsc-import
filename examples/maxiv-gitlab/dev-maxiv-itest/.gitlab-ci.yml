@@ -1,0 +1,5 @@
+include:
+  - project: 'kits-maxiv/cfg-maxiv-gitlabci'
+    file: '/.cpp-ci.yml'
+  - local: .catalogue-update.yml
+  

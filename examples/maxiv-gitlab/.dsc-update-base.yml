@@ -1,0 +1,31 @@
+.dsc-update-base:
+  image: docker.maxiv.lu.se/centos7-maxiv-repos
+  before_script:
+  - yum install git -y
+  - yum install -y python-virtualenv
+  when: manual
+  variables:
+    IMPORT_SCRIPT_REPO: "https://gitlab.maxiv.lu.se/ext-piogor/dsc-import.git"
+    IMPORT_SCRIPT_BRANCH: "master"
+    DSC_PRODUCTION_OPERATION: "True"  # if False the update uses a test server
+    DSC_REPOSITORY_URL: "$CI_PROJECT_URL"
+    DSC_REPOSITORY_TYPE: "GIT"
+    DSC_REPOSITORY_CONTACT: "kits@maxlab.lu.se"
+    DSC_LOG_PATH: "$CI_BUILDS_DIR/dsc-log"
+    #    GIT_CLONE_PATH: "$CI_BUILDS_DIR/ds"
+  script:
+    - virtualenv DSC_ENV
+    - . DSC_ENV/bin/activate
+    - pip install lxml
+    - pip install requests
+    - pip install svn
+    - pip install pytz
+    - mkdir -p $DSC_LOG_PATH
+    - cd $CI_BUILDS_DIR
+    - rm -rf dsc-import
+    - git clone -b $IMPORT_SCRIPT_BRANCH $IMPORT_SCRIPT_REPO
+    - cd dsc-import
+    - python dsc_import_utility.py --use-env
+    - ls $DSC_LOG_PATH
+    - deactivate
+  tags: [docker]

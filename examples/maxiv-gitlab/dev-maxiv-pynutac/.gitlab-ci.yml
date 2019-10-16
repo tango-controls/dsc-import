@@ -1,0 +1,7 @@
+include:
+  - local: '.catalogue-update.yml'
+
+# the below should be removed when stages are defined somewhere else (like in an included MAX-IV ci template),
+# the publish stage is in use by the catalogue-update job
+stages:
+  - publish

@@ -1,0 +1,20 @@
+# include base configuration
+include:
+  - project: 'ext-piogor/lib-maxiv-ci-dsc-integration'
+    file: ".dsc-update-base.yml"
+
+# provide specific information
+catalogue-update:
+  extends: .dsc-update-base
+  stage: publish
+  variables:
+    DSC_DEVICE_SERVER_NAME: 'Nutaq'
+    DSC_PYTHON_URL: |
+      file://$CI_PROJECT_DIR/src/pynutaq/nutaq/nutaq.py
+      file://$CI_PROJECT_DIR/src/pynutaq/nutaq/nutaqdiags.py
+    DSC_AUTHOR: 'antonio.milan_otero@maxlab.lu.se'
+    DSC_FAMILY: 'RF'
+    DSC_DEVICE_SERVER_DESCRIPTION: 'Device server for the Nutaq platform.'
+    DSC_CLASS_DESCRIPTION: 'Device server for the Nutaq platform.'
+    DSC_LICENSE: 'GPLv3'
+
