@@ -1,0 +1,17 @@
+# include base configuration
+include:
+  - project: 'ext-piogor/lib-maxiv-ci-dsc-integration'
+    file: ".dsc-update-base.yml"
+
+catalogue-update:
+  extends: .dsc-update-base
+  stage: publish
+  variables:
+    DSC_DEVICE_SERVER_NAME: "Itest2811"
+    DSC_XMI_URL: |
+      file://$CI_PROJECT_DIR/src/Itest2811Controller.xmi
+      file://$CI_PROJECT_DIR/src/Itest2811Channel.xmi
+    DSC_AUTHOR: 'kits@maxlab.lu.se'
+    DSC_LICENSE: "GPLv3"
+
+
