@@ -1,4 +1,4 @@
-# Integration of a GitLab repository
+# Integration of a GitLab repository with the Device Classes Catalogue
 
 To integrate a GitLab device server repository with the catalogue (to allow for automatic catalogue entries creation or updates) it is proposed to do the following:
 
@@ -14,9 +14,9 @@ To integrate a GitLab device server repository with the catalogue (to allow for 
   This job will have a base configuration for the catalogue updates. See examples in the [dsc-import script](https://github.com/tango-controls/dsc-import)
 
 - In your device server repository, add a `.cataluge-update.yml` which includes `.dsc-update-base.yml` and extend 
-  `dsc-update-base` job with information specific to this device server (use of the GitLab *variables:* yml command, see [this](https://docs.gitlab.com/ee/ci/variables/#via-gitlab-ciyml) ).
+  `dsc-update-base` job with information specific to this device server (use of the GitLab *variables* yml command, see [this](https://docs.gitlab.com/ee/ci/variables/#via-gitlab-ciyml) ).
 
-- Include the `.catalogue-update.yml` in the repository main CI/CD configuration (`.gitlab.yml`).
+- Include the `.catalogue-update.yml` in the repository main CI/CD configuration (`.gitlab-ci.yml`).
 
 - To avoid disclosure of your credentials, configure `DSC_LOGIN` and `DSC_PASSWORD` variables 
   [via UI](https://docs.gitlab.com/ee/ci/variables/#via-the-ui).
